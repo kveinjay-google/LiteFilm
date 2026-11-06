@@ -1,0 +1,13 @@
+.DS_Store
+build/
+DerivedData/
+*.xcuserstate
+xcuserdata/
+**/xcuserdata/
+*.moved-aside
+*.hmap
+*.ipa
+*.dSYM
+*.dSYM.zip
+vendor/SpektraLab/engine/build/
+vendor/SpektraLab/engine/resources/spektrafilm.metallib

@@ -1,0 +1,26 @@
+SpektraFilm for iOS
+film modeling powered by spektrafilm
+
+Spectral film and print model, measured profiles, and the baked constants:
+  spektrafilm — Andrea Volpato
+  https://github.com/andreavolpato/spektrafilm
+  Code license: GNU GPL-3.0-or-later
+  Profiles, LUTs, and direct derivatives: CC BY-SA 4.0
+  (see SPEKTRAFILM_LICENSE.txt)
+
+Native C++ / Metal engine this app links:
+  SpektraLab — Hanze Qiu
+  https://github.com/JamesQiu2005/SpektraLab
+  License: GNU GPL-3.0-or-later
+  SpektraLab is not affiliated with or endorsed by the spektrafilm project.
+
+Black-and-white profiles under engine/resources_product (Tri-X, T-Max,
+Neopan Acros II, HP5 Plus, Multigrade IV RC, and the CineStill 800T alias)
+are SpektraLab's own data. See PRODUCT_PROFILES_NOTICE.md.
+Trademark names identify the published data a profile was built from.
+
+metal-cpp: Copyright Apple Inc., Apache License 2.0.
+See metal-cpp-Apache-2.0.txt.
+
+This iOS application is a derivative work of the SpektraLab engine.
+It is distributed under the GNU General Public License, version 3 or later.

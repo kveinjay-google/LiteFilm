@@ -1,0 +1,2159 @@
+{
+  "schemaVersion": 1,
+  "defaultFrameId": "gallery_01",
+  "geometryPolicy": {
+    "insetBasis": "photoShortSide",
+    "defaultCropPolicy": "contain",
+    "defaultRatioMode": "locked",
+    "presetRatioIsSuggestionOnly": true,
+    "userRatioLockHasPriority": true,
+    "preserveSourceAspectRatio": true,
+    "cornerRadiusAppliesTo": "outerFrameOnly",
+    "decorationPlacement": "outsidePhotoRectangle",
+    "ratioHintNoteZh": "初始锁定原图画布比例（ratioMode=locked, ratioId=source）。换相框不改变画布比例；defaultRatioId 仅为推荐，仅在用户主动选择“随相框”时应用。固定画布中通过增加留白完整适配照片，不裁切。",
+    "defaultRatioId": "source",
+    "presetRatioApplication": "explicitFollowFrameOnly"
+  },
+  "annotationPolicy": {
+    "frameCodeMeaning": "templateIdentifierOnly",
+    "selectedFilmSource": "currentExplicitFilmSelection",
+    "missingSelectedFilmBehavior": "omit",
+    "syntheticCaptureMetadataAllowed": false,
+    "noteZh": "模板编号是设计标记，不是实际底片序号。胶片名称仅取当前选择。没有真实来源的日期、ISO、光圈、快门、相机型号一律不绘制。"
+  },
+  "assetPolicy": {
+    "offline": true,
+    "externalTexturesRequired": false,
+    "brandLogosRequired": false,
+    "materialRendering": "procedural",
+    "noteZh": "名称为原创设计方向；底片及相纸外观为参数化视觉表达，不冒充某品牌实物或准确的胶片扫描边缘。"
+  },
+  "families": [
+    {
+      "id": "gallery",
+      "nameZh": "画廊相纸",
+      "nameEn": "Gallery Prints"
+    },
+    {
+      "id": "darkroom",
+      "nameZh": "暗房试印",
+      "nameEn": "Darkroom Proofs"
+    },
+    {
+      "id": "film",
+      "nameZh": "底片片门",
+      "nameEn": "Film Rebates"
+    },
+    {
+      "id": "instant",
+      "nameZh": "即时成像",
+      "nameEn": "Instant Prints"
+    },
+    {
+      "id": "editorial",
+      "nameZh": "编辑排版",
+      "nameEn": "Editorial Mounts"
+    },
+    {
+      "id": "archive",
+      "nameZh": "收藏装裱",
+      "nameEn": "Archival Mounts"
+    }
+  ],
+  "ratioOptions": [
+    {
+      "id": "source",
+      "label": "原图比例",
+      "width": null,
+      "height": null
+    },
+    {
+      "id": "auto",
+      "label": "按相框扩边",
+      "width": null,
+      "height": null
+    },
+    {
+      "id": "1:1",
+      "label": "1:1",
+      "width": 1,
+      "height": 1
+    },
+    {
+      "id": "4:5",
+      "label": "4:5",
+      "width": 4,
+      "height": 5
+    },
+    {
+      "id": "3:4",
+      "label": "3:4",
+      "width": 3,
+      "height": 4
+    },
+    {
+      "id": "2:3",
+      "label": "2:3",
+      "width": 2,
+      "height": 3
+    },
+    {
+      "id": "4:3",
+      "label": "4:3",
+      "width": 4,
+      "height": 3
+    },
+    {
+      "id": "3:2",
+      "label": "3:2",
+      "width": 3,
+      "height": 2
+    },
+    {
+      "id": "16:9",
+      "label": "16:9",
+      "width": 16,
+      "height": 9
+    },
+    {
+      "id": "9:16",
+      "label": "9:16",
+      "width": 9,
+      "height": 16
+    },
+    {
+      "id": "65:24",
+      "label": "65:24",
+      "width": 65,
+      "height": 24
+    },
+    {
+      "id": "5:7",
+      "label": "5:7",
+      "width": 5,
+      "height": 7
+    }
+  ],
+  "frames": [
+    {
+      "id": "gallery_01",
+      "familyId": "gallery",
+      "nameZh": "暖白画廊",
+      "nameEn": "Warm Gallery",
+      "descriptionZh": "暖白单层相纸，三边等宽、下沿略宽；无字，作为默认的完整构图展示。",
+      "defaultRatioId": "auto",
+      "allowedRatioIds": [
+        "source",
+        "auto",
+        "1:1",
+        "4:5",
+        "3:4",
+        "2:3",
+        "4:3",
+        "3:2",
+        "16:9",
+        "9:16",
+        "65:24",
+        "5:7"
+      ],
+      "inset": {
+        "top": 0.055,
+        "right": 0.055,
+        "bottom": 0.085,
+        "left": 0.055
+      },
+      "palette": {
+        "outer": "#F5F1E7",
+        "inner": "#F5F1E7",
+        "accent": "#B08A55",
+        "ink": "#38332D"
+      },
+      "structure": "simple",
+      "cornerRadius": 0.0,
+      "innerRule": 0.0,
+      "grain": 0.0,
+      "annotation": {
+        "mode": "none",
+        "placement": "bottom_left",
+        "text": ""
+      },
+      "details": {
+        "sprocketCount": 0,
+        "railWidth": 0.0,
+        "outerLayer": 0.4,
+        "cornerSize": 0.0,
+        "deckleAmplitude": 0.0,
+        "registrationMarks": false
+      },
+      "recommendedFor": [
+        "旅行照片",
+        "日常默认",
+        "人像"
+      ]
+    },
+    {
+      "id": "gallery_02",
+      "familyId": "gallery",
+      "nameZh": "博物馆双卡",
+      "nameEn": "Museum Double Mat",
+      "descriptionZh": "两层中性白卡纸形成窄台阶，较宽下沿建立展览式视觉重心。",
+      "defaultRatioId": "4:5",
+      "allowedRatioIds": [
+        "source",
+        "auto",
+        "1:1",
+        "4:5",
+        "3:4",
+        "2:3",
+        "4:3",
+        "3:2",
+        "16:9",
+        "9:16",
+        "65:24",
+        "5:7"
+      ],
+      "inset": {
+        "top": 0.075,
+        "right": 0.075,
+        "bottom": 0.11,
+        "left": 0.075
+      },
+      "palette": {
+        "outer": "#D8D3C9",
+        "inner": "#FAF7F0",
+        "accent": "#AAA18F",
+        "ink": "#35312B"
+      },
+      "structure": "double_mat",
+      "cornerRadius": 0.0,
+      "innerRule": 0.0,
+      "grain": 0.0,
+      "annotation": {
+        "mode": "none",
+        "placement": "bottom_left",
+        "text": ""
+      },
+      "details": {
+        "sprocketCount": 0,
+        "railWidth": 0.0,
+        "outerLayer": 0.35,
+        "cornerSize": 0.0,
+        "deckleAmplitude": 0.0,
+        "registrationMarks": false
+      },
+      "recommendedFor": [
+        "作品展示",
+        "静物",
+        "竖幅摄影"
+      ]
+    },
+    {
+      "id": "gallery_03",
+      "familyId": "gallery",
+      "nameZh": "银盐细线",
+      "nameEn": "Silver Keyline",
+      "descriptionZh": "较窄的中性白边配一圈细炭灰内线，明确照片边界而不增加文字。",
+      "defaultRatioId": "3:2",
+      "allowedRatioIds": [
+        "source",
+        "auto",
+        "1:1",
+        "4:5",
+        "3:4",
+        "2:3",
+        "4:3",
+        "3:2",
+        "16:9",
+        "9:16",
+        "65:24",
+        "5:7"
+      ],
+      "inset": {
+        "top": 0.045,
+        "right": 0.045,
+        "bottom": 0.065,
+        "left": 0.045
+      },
+      "palette": {
+        "outer": "#F0EFEB",
+        "inner": "#FAFAF7",
+        "accent": "#B6B6AE",
+        "ink": "#343535"
+      },
+      "structure": "inner_rule",
+      "cornerRadius": 0.0,
+      "innerRule": 0.0015,
+      "grain": 0.0,
+      "annotation": {
+        "mode": "none",
+        "placement": "bottom_left",
+        "text": ""
+      },
+      "details": {
+        "sprocketCount": 0,
+        "railWidth": 0.0,
+        "outerLayer": 0.4,
+        "cornerSize": 0.0,
+        "deckleAmplitude": 0.0,
+        "registrationMarks": false
+      },
+      "recommendedFor": [
+        "黑白照片",
+        "建筑",
+        "横幅摄影"
+      ]
+    },
+    {
+      "id": "gallery_04",
+      "familyId": "gallery",
+      "nameZh": "手工毛边",
+      "nameEn": "Handmade Deckle",
+      "descriptionZh": "微量不规则纸缘配细纤维颗粒，边缘处理仅作用于外纸，不侵入照片。",
+      "defaultRatioId": "5:7",
+      "allowedRatioIds": [
+        "source",
+        "auto",
+        "1:1",
+        "4:5",
+        "3:4",
+        "2:3",
+        "4:3",
+        "3:2",
+        "16:9",
+        "9:16",
+        "65:24",
+        "5:7"
+      ],
+      "inset": {
+        "top": 0.075,
+        "right": 0.075,
+        "bottom": 0.1,
+        "left": 0.075
+      },
+      "palette": {
+        "outer": "#EDE6D7",
+        "inner": "#F8F1E2",
+        "accent": "#B7A78C",
+        "ink": "#4A4035"
+      },
+      "structure": "deckle",
+      "cornerRadius": 0.0,
+      "innerRule": 0.0,
+      "grain": 0.0,
+      "annotation": {
+        "mode": "none",
+        "placement": "bottom_left",
+        "text": ""
+      },
+      "details": {
+        "sprocketCount": 0,
+        "railWidth": 0.0,
+        "outerLayer": 0.4,
+        "cornerSize": 0.0,
+        "deckleAmplitude": 0.0035,
+        "registrationMarks": false
+      },
+      "recommendedFor": [
+        "自然景物",
+        "艺术肖像",
+        "柔和色彩"
+      ]
+    },
+    {
+      "id": "gallery_05",
+      "familyId": "gallery",
+      "nameZh": "下沿留白",
+      "nameEn": "Weighted Lower Mat",
+      "descriptionZh": "上边紧凑、下边明显加厚，以不对称留白获得摄影画册的落款空间，默认不印文字。",
+      "defaultRatioId": "2:3",
+      "allowedRatioIds": [
+        "source",
+        "auto",
+        "1:1",
+        "4:5",
+        "3:4",
+        "2:3",
+        "4:3",
+        "3:2",
+        "16:9",
+        "9:16",
+        "65:24",
+        "5:7"
+      ],
+      "inset": {
+        "top": 0.045,
+        "right": 0.055,
+        "bottom": 0.18,
+        "left": 0.055
+      },
+      "palette": {
+        "outer": "#F6F3EC",
+        "inner": "#F6F3EC",
+        "accent": "#C1B6A3",
+        "ink": "#38342E"
+      },
+      "structure": "asymmetric",
+      "cornerRadius": 0.0,
+      "innerRule": 0.0,
+      "grain": 0.0,
+      "annotation": {
+        "mode": "none",
+        "placement": "bottom_left",
+        "text": ""
+      },
+      "details": {
+        "sprocketCount": 0,
+        "railWidth": 0.0,
+        "outerLayer": 0.4,
+        "cornerSize": 0.0,
+        "deckleAmplitude": 0.0,
+        "registrationMarks": false
+      },
+      "recommendedFor": [
+        "竖幅摄影",
+        "人物",
+        "极简构图"
+      ]
+    },
+    {
+      "id": "gallery_06",
+      "familyId": "gallery",
+      "nameZh": "夜幕白芯",
+      "nameEn": "Nocturne White Core",
+      "descriptionZh": "较宽炭黑外层搭配窄暖白内芯，两层的宽度比例形成明确的深浅转换。",
+      "defaultRatioId": "3:2",
+      "allowedRatioIds": [
+        "source",
+        "auto",
+        "1:1",
+        "4:5",
+        "3:4",
+        "2:3",
+        "4:3",
+        "3:2",
+        "16:9",
+        "9:16",
+        "65:24",
+        "5:7"
+      ],
+      "inset": {
+        "top": 0.06,
+        "right": 0.06,
+        "bottom": 0.085,
+        "left": 0.06
+      },
+      "palette": {
+        "outer": "#20211F",
+        "inner": "#F2EEE4",
+        "accent": "#A8987A",
+        "ink": "#E7E1D4"
+      },
+      "structure": "double_mat",
+      "cornerRadius": 0.0,
+      "innerRule": 0.0008,
+      "grain": 0.0,
+      "annotation": {
+        "mode": "none",
+        "placement": "bottom_left",
+        "text": ""
+      },
+      "details": {
+        "sprocketCount": 0,
+        "railWidth": 0.0,
+        "outerLayer": 0.65,
+        "cornerSize": 0.0,
+        "deckleAmplitude": 0.0,
+        "registrationMarks": false
+      },
+      "recommendedFor": [
+        "夜景",
+        "高对比照片",
+        "舞台摄影"
+      ]
+    },
+    {
+      "id": "darkroom_01",
+      "familyId": "darkroom",
+      "nameZh": "黑绒试印",
+      "nameEn": "Velvet Proof",
+      "descriptionZh": "暖黑哑光边框内侧压一道极细浅线，下沿只显示当前选择的胶片名称。",
+      "defaultRatioId": "auto",
+      "allowedRatioIds": [
+        "source",
+        "auto",
+        "1:1",
+        "4:5",
+        "3:4",
+        "2:3",
+        "4:3",
+        "3:2",
+        "16:9",
+        "9:16",
+        "65:24",
+        "5:7"
+      ],
+      "inset": {
+        "top": 0.055,
+        "right": 0.055,
+        "bottom": 0.085,
+        "left": 0.055
+      },
+      "palette": {
+        "outer": "#181614",
+        "inner": "#24211D",
+        "accent": "#C49353",
+        "ink": "#C8C0B4"
+      },
+      "structure": "inner_rule",
+      "cornerRadius": 0.0,
+      "innerRule": 0.0012,
+      "grain": 0.028,
+      "annotation": {
+        "mode": "selected_film",
+        "placement": "bottom_left",
+        "text": ""
+      },
+      "details": {
+        "sprocketCount": 0,
+        "railWidth": 0.0,
+        "outerLayer": 0.4,
+        "cornerSize": 0.0,
+        "deckleAmplitude": 0.0,
+        "registrationMarks": false
+      },
+      "recommendedFor": [
+        "日常调色",
+        "暗调照片",
+        "彩色照片"
+      ]
+    },
+    {
+      "id": "darkroom_02",
+      "familyId": "darkroom",
+      "nameZh": "琥珀印口",
+      "nameEn": "Amber Rebate",
+      "descriptionZh": "短边距黑色试印框配一圈琥珀片基细边，下沿略宽供真实选择信息使用。",
+      "defaultRatioId": "3:2",
+      "allowedRatioIds": [
+        "source",
+        "auto",
+        "1:1",
+        "4:5",
+        "3:4",
+        "2:3",
+        "4:3",
+        "3:2",
+        "16:9",
+        "9:16",
+        "65:24",
+        "5:7"
+      ],
+      "inset": {
+        "top": 0.04,
+        "right": 0.04,
+        "bottom": 0.07,
+        "left": 0.04
+      },
+      "palette": {
+        "outer": "#18130F",
+        "inner": "#342317",
+        "accent": "#C18E45",
+        "ink": "#DDC29A"
+      },
+      "structure": "rebate",
+      "cornerRadius": 0.0,
+      "innerRule": 0.0,
+      "grain": 0.018,
+      "annotation": {
+        "mode": "selected_film",
+        "placement": "bottom_left",
+        "text": ""
+      },
+      "details": {
+        "sprocketCount": 0,
+        "railWidth": 0.008,
+        "outerLayer": 0.4,
+        "cornerSize": 0.0,
+        "deckleAmplitude": 0.0,
+        "registrationMarks": false
+      },
+      "recommendedFor": [
+        "暖调照片",
+        "街头摄影",
+        "旅行"
+      ]
+    },
+    {
+      "id": "darkroom_03",
+      "familyId": "darkroom",
+      "nameZh": "放映黑场",
+      "nameEn": "Projection Matte",
+      "descriptionZh": "上下较厚、左右极窄的暗色留白，形成横幅放映画面；保留照片原比例。",
+      "defaultRatioId": "16:9",
+      "allowedRatioIds": [
+        "source",
+        "auto",
+        "1:1",
+        "4:5",
+        "3:4",
+        "2:3",
+        "4:3",
+        "3:2",
+        "16:9",
+        "9:16",
+        "65:24",
+        "5:7"
+      ],
+      "inset": {
+        "top": 0.14,
+        "right": 0.04,
+        "bottom": 0.14,
+        "left": 0.04
+      },
+      "palette": {
+        "outer": "#101111",
+        "inner": "#1C1D1D",
+        "accent": "#7E8A88",
+        "ink": "#C1C8C5"
+      },
+      "structure": "letterbox",
+      "cornerRadius": 0.0,
+      "innerRule": 0.0008,
+      "grain": 0.0,
+      "annotation": {
+        "mode": "none",
+        "placement": "bottom_left",
+        "text": ""
+      },
+      "details": {
+        "sprocketCount": 0,
+        "railWidth": 0.0,
+        "outerLayer": 0.4,
+        "cornerSize": 0.0,
+        "deckleAmplitude": 0.0,
+        "registrationMarks": false
+      },
+      "recommendedFor": [
+        "宽幅风景",
+        "城市夜景",
+        "叙事照片"
+      ]
+    },
+    {
+      "id": "darkroom_04",
+      "familyId": "darkroom",
+      "nameZh": "暗房签条",
+      "nameEn": "Proof Index Margin",
+      "descriptionZh": "紧凑上沿与较宽下沿形成试印签条，角落的 DK-04 是模板编号，不是拍摄信息。",
+      "defaultRatioId": "4:3",
+      "allowedRatioIds": [
+        "source",
+        "auto",
+        "1:1",
+        "4:5",
+        "3:4",
+        "2:3",
+        "4:3",
+        "3:2",
+        "16:9",
+        "9:16",
+        "65:24",
+        "5:7"
+      ],
+      "inset": {
+        "top": 0.035,
+        "right": 0.04,
+        "bottom": 0.135,
+        "left": 0.04
+      },
+      "palette": {
+        "outer": "#211D18",
+        "inner": "#2B251D",
+        "accent": "#B28A54",
+        "ink": "#D0BFA5"
+      },
+      "structure": "asymmetric",
+      "cornerRadius": 0.0,
+      "innerRule": 0.0,
+      "grain": 0.035,
+      "annotation": {
+        "mode": "frame_code",
+        "placement": "bottom_right",
+        "text": "DK-04"
+      },
+      "details": {
+        "sprocketCount": 0,
+        "railWidth": 0.0,
+        "outerLayer": 0.4,
+        "cornerSize": 0.0,
+        "deckleAmplitude": 0.0,
+        "registrationMarks": false
+      },
+      "recommendedFor": [
+        "纪实照片",
+        "试印展示",
+        "小组照片"
+      ]
+    },
+    {
+      "id": "darkroom_05",
+      "familyId": "darkroom",
+      "nameZh": "片门定位",
+      "nameEn": "Aperture Registration",
+      "descriptionZh": "均衡厚黑片门与轻微圆角外壳，辅以少量定位标记，呈现暗房工具气质。",
+      "defaultRatioId": "3:4",
+      "allowedRatioIds": [
+        "source",
+        "auto",
+        "1:1",
+        "4:5",
+        "3:4",
+        "2:3",
+        "4:3",
+        "3:2",
+        "16:9",
+        "9:16",
+        "65:24",
+        "5:7"
+      ],
+      "inset": {
+        "top": 0.075,
+        "right": 0.075,
+        "bottom": 0.09,
+        "left": 0.075
+      },
+      "palette": {
+        "outer": "#242320",
+        "inner": "#151514",
+        "accent": "#B8B1A1",
+        "ink": "#D2CABA"
+      },
+      "structure": "slide_mount",
+      "cornerRadius": 0.006,
+      "innerRule": 0.001,
+      "grain": 0.0,
+      "annotation": {
+        "mode": "none",
+        "placement": "bottom_left",
+        "text": ""
+      },
+      "details": {
+        "sprocketCount": 0,
+        "railWidth": 0.0,
+        "outerLayer": 0.4,
+        "cornerSize": 0.0,
+        "deckleAmplitude": 0.0,
+        "registrationMarks": true
+      },
+      "recommendedFor": [
+        "肖像",
+        "建筑局部",
+        "产品照片"
+      ]
+    },
+    {
+      "id": "darkroom_06",
+      "familyId": "darkroom",
+      "nameZh": "银灰黑芯",
+      "nameEn": "Graphite Black Core",
+      "descriptionZh": "银灰外纸层与深黑内芯叠合，内圈留宽、外圈收窄，突出照片的光色。",
+      "defaultRatioId": "1:1",
+      "allowedRatioIds": [
+        "source",
+        "auto",
+        "1:1",
+        "4:5",
+        "3:4",
+        "2:3",
+        "4:3",
+        "3:2",
+        "16:9",
+        "9:16",
+        "65:24",
+        "5:7"
+      ],
+      "inset": {
+        "top": 0.07,
+        "right": 0.07,
+        "bottom": 0.1,
+        "left": 0.07
+      },
+      "palette": {
+        "outer": "#666761",
+        "inner": "#161715",
+        "accent": "#A4A69A",
+        "ink": "#DFE0D7"
+      },
+      "structure": "double_mat",
+      "cornerRadius": 0.0,
+      "innerRule": 0.0,
+      "grain": 0.015,
+      "annotation": {
+        "mode": "none",
+        "placement": "bottom_left",
+        "text": ""
+      },
+      "details": {
+        "sprocketCount": 0,
+        "railWidth": 0.0,
+        "outerLayer": 0.28,
+        "cornerSize": 0.0,
+        "deckleAmplitude": 0.0,
+        "registrationMarks": false
+      },
+      "recommendedFor": [
+        "方形构图",
+        "黑白照片",
+        "静物"
+      ]
+    },
+    {
+      "id": "film_01",
+      "familyId": "film",
+      "nameZh": "标准片齿",
+      "nameEn": "Classic Perforations",
+      "descriptionZh": "左右连续片齿与窄上下印口构成底片样式，型号使用当前胶片名称。",
+      "defaultRatioId": "2:3",
+      "allowedRatioIds": [
+        "source",
+        "auto",
+        "1:1",
+        "4:5",
+        "3:4",
+        "2:3",
+        "4:3",
+        "3:2",
+        "16:9",
+        "9:16",
+        "65:24",
+        "5:7"
+      ],
+      "inset": {
+        "top": 0.035,
+        "right": 0.07,
+        "bottom": 0.05,
+        "left": 0.07
+      },
+      "palette": {
+        "outer": "#E8E1D3",
+        "inner": "#241A12",
+        "accent": "#C79A4D",
+        "ink": "#D5AE6E"
+      },
+      "structure": "sprocket",
+      "cornerRadius": 0.0,
+      "innerRule": 0.0,
+      "grain": 0.0,
+      "annotation": {
+        "mode": "selected_film",
+        "placement": "bottom_left",
+        "text": ""
+      },
+      "details": {
+        "sprocketCount": 12,
+        "railWidth": 0.028,
+        "outerLayer": 0.4,
+        "cornerSize": 0.0,
+        "deckleAmplitude": 0.0,
+        "registrationMarks": false
+      },
+      "recommendedFor": [
+        "街头摄影",
+        "竖幅照片",
+        "胶片主题"
+      ]
+    },
+    {
+      "id": "film_02",
+      "familyId": "film",
+      "nameZh": "半格窄齿",
+      "nameEn": "Half-frame Study",
+      "descriptionZh": "较宽侧边、较少片齿与方整小画幅相呼应，H-02 仅为模板标记。",
+      "defaultRatioId": "3:4",
+      "allowedRatioIds": [
+        "source",
+        "auto",
+        "1:1",
+        "4:5",
+        "3:4",
+        "2:3",
+        "4:3",
+        "3:2",
+        "16:9",
+        "9:16",
+        "65:24",
+        "5:7"
+      ],
+      "inset": {
+        "top": 0.035,
+        "right": 0.095,
+        "bottom": 0.035,
+        "left": 0.095
+      },
+      "palette": {
+        "outer": "#EEE8DD",
+        "inner": "#29251C",
+        "accent": "#B7A16F",
+        "ink": "#C8B782"
+      },
+      "structure": "sprocket",
+      "cornerRadius": 0.0,
+      "innerRule": 0.0,
+      "grain": 0.0,
+      "annotation": {
+        "mode": "frame_code",
+        "placement": "bottom_right",
+        "text": "H-02"
+      },
+      "details": {
+        "sprocketCount": 8,
+        "railWidth": 0.024,
+        "outerLayer": 0.4,
+        "cornerSize": 0.0,
+        "deckleAmplitude": 0.0,
+        "registrationMarks": false
+      },
+      "recommendedFor": [
+        "日常随拍",
+        "细节照片",
+        "竖幅构图"
+      ]
+    },
+    {
+      "id": "film_03",
+      "familyId": "film",
+      "nameZh": "中幅素边",
+      "nameEn": "Medium-format Rebate",
+      "descriptionZh": "没有片齿的均衡深色片基边，较宽下沿承载当前胶片名，适合方形照片。",
+      "defaultRatioId": "1:1",
+      "allowedRatioIds": [
+        "source",
+        "auto",
+        "1:1",
+        "4:5",
+        "3:4",
+        "2:3",
+        "4:3",
+        "3:2",
+        "16:9",
+        "9:16",
+        "65:24",
+        "5:7"
+      ],
+      "inset": {
+        "top": 0.04,
+        "right": 0.04,
+        "bottom": 0.07,
+        "left": 0.04
+      },
+      "palette": {
+        "outer": "#D7D0C2",
+        "inner": "#251E18",
+        "accent": "#AD8C5B",
+        "ink": "#C5B39B"
+      },
+      "structure": "rebate",
+      "cornerRadius": 0.0,
+      "innerRule": 0.0,
+      "grain": 0.0,
+      "annotation": {
+        "mode": "selected_film",
+        "placement": "bottom_left",
+        "text": ""
+      },
+      "details": {
+        "sprocketCount": 0,
+        "railWidth": 0.005,
+        "outerLayer": 0.4,
+        "cornerSize": 0.0,
+        "deckleAmplitude": 0.0,
+        "registrationMarks": false
+      },
+      "recommendedFor": [
+        "方形照片",
+        "静物",
+        "肖像"
+      ]
+    },
+    {
+      "id": "film_04",
+      "familyId": "film",
+      "nameZh": "幻灯片匣",
+      "nameEn": "Slide Mount",
+      "descriptionZh": "宽幅浅色片匣包围清晰照片窗口，轻圆角外缘和薄内线表达装片结构。",
+      "defaultRatioId": "3:2",
+      "allowedRatioIds": [
+        "source",
+        "auto",
+        "1:1",
+        "4:5",
+        "3:4",
+        "2:3",
+        "4:3",
+        "3:2",
+        "16:9",
+        "9:16",
+        "65:24",
+        "5:7"
+      ],
+      "inset": {
+        "top": 0.13,
+        "right": 0.13,
+        "bottom": 0.16,
+        "left": 0.13
+      },
+      "palette": {
+        "outer": "#DDDCD5",
+        "inner": "#F4F1E8",
+        "accent": "#95998D",
+        "ink": "#46483F"
+      },
+      "structure": "slide_mount",
+      "cornerRadius": 0.01,
+      "innerRule": 0.0015,
+      "grain": 0.0,
+      "annotation": {
+        "mode": "frame_code",
+        "placement": "bottom_center",
+        "text": "F-04"
+      },
+      "details": {
+        "sprocketCount": 0,
+        "railWidth": 0.0,
+        "outerLayer": 0.4,
+        "cornerSize": 0.0,
+        "deckleAmplitude": 0.0,
+        "registrationMarks": false
+      },
+      "recommendedFor": [
+        "风景",
+        "旅行档案",
+        "横幅照片"
+      ]
+    },
+    {
+      "id": "film_05",
+      "familyId": "film",
+      "nameZh": "暖色片基",
+      "nameEn": "Warm Film Base",
+      "descriptionZh": "较薄外缘与较宽的暖棕片基内边形成半透明底片的视觉联想，照片本身不染色。",
+      "defaultRatioId": "3:2",
+      "allowedRatioIds": [
+        "source",
+        "auto",
+        "1:1",
+        "4:5",
+        "3:4",
+        "2:3",
+        "4:3",
+        "3:2",
+        "16:9",
+        "9:16",
+        "65:24",
+        "5:7"
+      ],
+      "inset": {
+        "top": 0.035,
+        "right": 0.035,
+        "bottom": 0.05,
+        "left": 0.035
+      },
+      "palette": {
+        "outer": "#775438",
+        "inner": "#291B13",
+        "accent": "#C79554",
+        "ink": "#E5C596"
+      },
+      "structure": "rebate",
+      "cornerRadius": 0.0,
+      "innerRule": 0.0,
+      "grain": 0.025,
+      "annotation": {
+        "mode": "frame_code",
+        "placement": "bottom_left",
+        "text": "F-05"
+      },
+      "details": {
+        "sprocketCount": 0,
+        "railWidth": 0.015,
+        "outerLayer": 0.4,
+        "cornerSize": 0.0,
+        "deckleAmplitude": 0.0,
+        "registrationMarks": false
+      },
+      "recommendedFor": [
+        "暖调照片",
+        "自然光人像",
+        "复古街景"
+      ]
+    },
+    {
+      "id": "film_06",
+      "familyId": "film",
+      "nameZh": "制片定位",
+      "nameEn": "Frame Registration",
+      "descriptionZh": "深色印口配极少定位标记与 FR-06 模板边码，强调规整的横幅片门。",
+      "defaultRatioId": "16:9",
+      "allowedRatioIds": [
+        "source",
+        "auto",
+        "1:1",
+        "4:5",
+        "3:4",
+        "2:3",
+        "4:3",
+        "3:2",
+        "16:9",
+        "9:16",
+        "65:24",
+        "5:7"
+      ],
+      "inset": {
+        "top": 0.055,
+        "right": 0.055,
+        "bottom": 0.085,
+        "left": 0.055
+      },
+      "palette": {
+        "outer": "#E5DFD1",
+        "inner": "#1D211F",
+        "accent": "#B99B56",
+        "ink": "#D3BD86"
+      },
+      "structure": "rebate",
+      "cornerRadius": 0.0,
+      "innerRule": 0.0,
+      "grain": 0.0,
+      "annotation": {
+        "mode": "frame_code",
+        "placement": "bottom_right",
+        "text": "FR-06"
+      },
+      "details": {
+        "sprocketCount": 0,
+        "railWidth": 0.006,
+        "outerLayer": 0.4,
+        "cornerSize": 0.0,
+        "deckleAmplitude": 0.0,
+        "registrationMarks": true
+      },
+      "recommendedFor": [
+        "宽幅照片",
+        "建筑",
+        "摄影系列"
+      ]
+    },
+    {
+      "id": "instant_01",
+      "familyId": "instant",
+      "nameZh": "经典宽底",
+      "nameEn": "Classic Instant",
+      "descriptionZh": "较窄三边与显著宽底的暖白相纸，呈现即影成品的留白比例，不预印日期或手写字。",
+      "defaultRatioId": "4:5",
+      "allowedRatioIds": [
+        "source",
+        "auto",
+        "1:1",
+        "4:5",
+        "3:4",
+        "2:3",
+        "4:3",
+        "3:2",
+        "16:9",
+        "9:16",
+        "65:24",
+        "5:7"
+      ],
+      "inset": {
+        "top": 0.055,
+        "right": 0.065,
+        "bottom": 0.24,
+        "left": 0.065
+      },
+      "palette": {
+        "outer": "#F3EDE1",
+        "inner": "#FBF6EA",
+        "accent": "#C5B18E",
+        "ink": "#4A4133"
+      },
+      "structure": "instant",
+      "cornerRadius": 0.003,
+      "innerRule": 0.0,
+      "grain": 0.0,
+      "annotation": {
+        "mode": "none",
+        "placement": "bottom_left",
+        "text": ""
+      },
+      "details": {
+        "sprocketCount": 0,
+        "railWidth": 0.0,
+        "outerLayer": 0.4,
+        "cornerSize": 0.0,
+        "deckleAmplitude": 0.0,
+        "registrationMarks": false
+      },
+      "recommendedFor": [
+        "人物合影",
+        "日常记忆",
+        "旅行"
+      ]
+    },
+    {
+      "id": "instant_02",
+      "familyId": "instant",
+      "nameZh": "正方即影",
+      "nameEn": "Square Instant",
+      "descriptionZh": "为方形画面配置均衡侧边和宽底，外角更柔和，纸张颗粒更轻。",
+      "defaultRatioId": "1:1",
+      "allowedRatioIds": [
+        "source",
+        "auto",
+        "1:1",
+        "4:5",
+        "3:4",
+        "2:3",
+        "4:3",
+        "3:2",
+        "16:9",
+        "9:16",
+        "65:24",
+        "5:7"
+      ],
+      "inset": {
+        "top": 0.07,
+        "right": 0.075,
+        "bottom": 0.2,
+        "left": 0.075
+      },
+      "palette": {
+        "outer": "#F1F1E9",
+        "inner": "#FCFCF4",
+        "accent": "#A4AC99",
+        "ink": "#3F463A"
+      },
+      "structure": "instant",
+      "cornerRadius": 0.012,
+      "innerRule": 0.0,
+      "grain": 0.0,
+      "annotation": {
+        "mode": "none",
+        "placement": "bottom_left",
+        "text": ""
+      },
+      "details": {
+        "sprocketCount": 0,
+        "railWidth": 0.0,
+        "outerLayer": 0.4,
+        "cornerSize": 0.0,
+        "deckleAmplitude": 0.0,
+        "registrationMarks": false
+      },
+      "recommendedFor": [
+        "方形照片",
+        "生活细节",
+        "人物"
+      ]
+    },
+    {
+      "id": "instant_03",
+      "familyId": "instant",
+      "nameZh": "黑卡留签",
+      "nameEn": "Black Instant Index",
+      "descriptionZh": "深色纸卡配更宽下沿和小型 I-03 模板编号，形成安静的收藏签条。",
+      "defaultRatioId": "3:4",
+      "allowedRatioIds": [
+        "source",
+        "auto",
+        "1:1",
+        "4:5",
+        "3:4",
+        "2:3",
+        "4:3",
+        "3:2",
+        "16:9",
+        "9:16",
+        "65:24",
+        "5:7"
+      ],
+      "inset": {
+        "top": 0.05,
+        "right": 0.06,
+        "bottom": 0.28,
+        "left": 0.06
+      },
+      "palette": {
+        "outer": "#252423",
+        "inner": "#34312C",
+        "accent": "#C6A674",
+        "ink": "#DCC9A7"
+      },
+      "structure": "instant",
+      "cornerRadius": 0.006,
+      "innerRule": 0.0,
+      "grain": 0.032,
+      "annotation": {
+        "mode": "frame_code",
+        "placement": "bottom_left",
+        "text": "I-03"
+      },
+      "details": {
+        "sprocketCount": 0,
+        "railWidth": 0.0,
+        "outerLayer": 0.4,
+        "cornerSize": 0.0,
+        "deckleAmplitude": 0.0,
+        "registrationMarks": false
+      },
+      "recommendedFor": [
+        "夜景人物",
+        "纪念照片",
+        "暗调照片"
+      ]
+    },
+    {
+      "id": "instant_04",
+      "familyId": "instant",
+      "nameZh": "彩边即影",
+      "nameEn": "Color-rim Instant",
+      "descriptionZh": "窄彩色外层包裹暖白内纸，宽底仍保持即时成像式比例，结构为真正双层边。",
+      "defaultRatioId": "4:5",
+      "allowedRatioIds": [
+        "source",
+        "auto",
+        "1:1",
+        "4:5",
+        "3:4",
+        "2:3",
+        "4:3",
+        "3:2",
+        "16:9",
+        "9:16",
+        "65:24",
+        "5:7"
+      ],
+      "inset": {
+        "top": 0.075,
+        "right": 0.075,
+        "bottom": 0.22,
+        "left": 0.075
+      },
+      "palette": {
+        "outer": "#587E78",
+        "inner": "#F3EEE3",
+        "accent": "#B8CEC5",
+        "ink": "#354E49"
+      },
+      "structure": "double_mat",
+      "cornerRadius": 0.004,
+      "innerRule": 0.0,
+      "grain": 0.018,
+      "annotation": {
+        "mode": "none",
+        "placement": "bottom_left",
+        "text": ""
+      },
+      "details": {
+        "sprocketCount": 0,
+        "railWidth": 0.0,
+        "outerLayer": 0.25,
+        "cornerSize": 0.0,
+        "deckleAmplitude": 0.0,
+        "registrationMarks": false
+      },
+      "recommendedFor": [
+        "户外合影",
+        "绿调景物",
+        "日常分享"
+      ]
+    },
+    {
+      "id": "instant_05",
+      "familyId": "instant",
+      "nameZh": "横幅纪念",
+      "nameEn": "Landscape Keepsake",
+      "descriptionZh": "横幅照片右侧留出较宽纸边，形成横向纪念卡的比例，不强制旋转原图。",
+      "defaultRatioId": "3:2",
+      "allowedRatioIds": [
+        "source",
+        "auto",
+        "1:1",
+        "4:5",
+        "3:4",
+        "2:3",
+        "4:3",
+        "3:2",
+        "16:9",
+        "9:16",
+        "65:24",
+        "5:7"
+      ],
+      "inset": {
+        "top": 0.055,
+        "right": 0.18,
+        "bottom": 0.06,
+        "left": 0.055
+      },
+      "palette": {
+        "outer": "#EEE7D9",
+        "inner": "#F8F1E5",
+        "accent": "#B99B76",
+        "ink": "#4B4034"
+      },
+      "structure": "asymmetric",
+      "cornerRadius": 0.002,
+      "innerRule": 0.0,
+      "grain": 0.0,
+      "annotation": {
+        "mode": "none",
+        "placement": "bottom_left",
+        "text": ""
+      },
+      "details": {
+        "sprocketCount": 0,
+        "railWidth": 0.0,
+        "outerLayer": 0.4,
+        "cornerSize": 0.0,
+        "deckleAmplitude": 0.0,
+        "registrationMarks": false
+      },
+      "recommendedFor": [
+        "横幅合影",
+        "旅行纪念",
+        "宽场景"
+      ]
+    },
+    {
+      "id": "instant_06",
+      "familyId": "instant",
+      "nameZh": "柔角白印",
+      "nameEn": "Soft-corner Print",
+      "descriptionZh": "较短宽底搭配柔和外角与极细内线，适合竖幅纸质照片的轻巧呈现。",
+      "defaultRatioId": "5:7",
+      "allowedRatioIds": [
+        "source",
+        "auto",
+        "1:1",
+        "4:5",
+        "3:4",
+        "2:3",
+        "4:3",
+        "3:2",
+        "16:9",
+        "9:16",
+        "65:24",
+        "5:7"
+      ],
+      "inset": {
+        "top": 0.065,
+        "right": 0.065,
+        "bottom": 0.16,
+        "left": 0.065
+      },
+      "palette": {
+        "outer": "#E9E8E3",
+        "inner": "#F8F7F1",
+        "accent": "#B3B2A4",
+        "ink": "#44443D"
+      },
+      "structure": "instant",
+      "cornerRadius": 0.02,
+      "innerRule": 0.0008,
+      "grain": 0.0,
+      "annotation": {
+        "mode": "none",
+        "placement": "bottom_left",
+        "text": ""
+      },
+      "details": {
+        "sprocketCount": 0,
+        "railWidth": 0.0,
+        "outerLayer": 0.4,
+        "cornerSize": 0.0,
+        "deckleAmplitude": 0.0,
+        "registrationMarks": false
+      },
+      "recommendedFor": [
+        "肖像",
+        "家庭照片",
+        "竖幅作品"
+      ]
+    },
+    {
+      "id": "editorial_01",
+      "familyId": "editorial",
+      "nameZh": "扉页留白",
+      "nameEn": "Opening-page Margin",
+      "descriptionZh": "左侧和下沿加宽，像摄影画册的开篇页；保留空白而不填充宣传文字。",
+      "defaultRatioId": "3:4",
+      "allowedRatioIds": [
+        "source",
+        "auto",
+        "1:1",
+        "4:5",
+        "3:4",
+        "2:3",
+        "4:3",
+        "3:2",
+        "16:9",
+        "9:16",
+        "65:24",
+        "5:7"
+      ],
+      "inset": {
+        "top": 0.045,
+        "right": 0.05,
+        "bottom": 0.12,
+        "left": 0.18
+      },
+      "palette": {
+        "outer": "#F4F2EB",
+        "inner": "#FAF8F2",
+        "accent": "#9F9887",
+        "ink": "#35352F"
+      },
+      "structure": "asymmetric",
+      "cornerRadius": 0.0,
+      "innerRule": 0.0,
+      "grain": 0.0,
+      "annotation": {
+        "mode": "none",
+        "placement": "bottom_left",
+        "text": ""
+      },
+      "details": {
+        "sprocketCount": 0,
+        "railWidth": 0.0,
+        "outerLayer": 0.4,
+        "cornerSize": 0.0,
+        "deckleAmplitude": 0.0,
+        "registrationMarks": false
+      },
+      "recommendedFor": [
+        "摄影画册",
+        "人物",
+        "简洁构图"
+      ]
+    },
+    {
+      "id": "editorial_02",
+      "familyId": "editorial",
+      "nameZh": "横向银幕",
+      "nameEn": "Editorial Cinema",
+      "descriptionZh": "上下对称宽边与极窄侧边形成明亮的横幅画面展示，适合低矮构图。",
+      "defaultRatioId": "16:9",
+      "allowedRatioIds": [
+        "source",
+        "auto",
+        "1:1",
+        "4:5",
+        "3:4",
+        "2:3",
+        "4:3",
+        "3:2",
+        "16:9",
+        "9:16",
+        "65:24",
+        "5:7"
+      ],
+      "inset": {
+        "top": 0.13,
+        "right": 0.035,
+        "bottom": 0.13,
+        "left": 0.035
+      },
+      "palette": {
+        "outer": "#E7E6E0",
+        "inner": "#F3F1E9",
+        "accent": "#8F948D",
+        "ink": "#373B37"
+      },
+      "structure": "letterbox",
+      "cornerRadius": 0.0,
+      "innerRule": 0.001,
+      "grain": 0.0,
+      "annotation": {
+        "mode": "none",
+        "placement": "bottom_left",
+        "text": ""
+      },
+      "details": {
+        "sprocketCount": 0,
+        "railWidth": 0.0,
+        "outerLayer": 0.4,
+        "cornerSize": 0.0,
+        "deckleAmplitude": 0.0,
+        "registrationMarks": false
+      },
+      "recommendedFor": [
+        "宽幅风景",
+        "城市天际线",
+        "横幅叙事"
+      ]
+    },
+    {
+      "id": "editorial_03",
+      "familyId": "editorial",
+      "nameZh": "竖刊书口",
+      "nameEn": "Portrait Magazine Gutter",
+      "descriptionZh": "右侧留较宽书口、上沿收紧，照片重心偏左，适合高瘦竖幅构图。",
+      "defaultRatioId": "9:16",
+      "allowedRatioIds": [
+        "source",
+        "auto",
+        "1:1",
+        "4:5",
+        "3:4",
+        "2:3",
+        "4:3",
+        "3:2",
+        "16:9",
+        "9:16",
+        "65:24",
+        "5:7"
+      ],
+      "inset": {
+        "top": 0.04,
+        "right": 0.18,
+        "bottom": 0.09,
+        "left": 0.045
+      },
+      "palette": {
+        "outer": "#ECE9E1",
+        "inner": "#F7F3EB",
+        "accent": "#A3957B",
+        "ink": "#423D34"
+      },
+      "structure": "asymmetric",
+      "cornerRadius": 0.0,
+      "innerRule": 0.0,
+      "grain": 0.0,
+      "annotation": {
+        "mode": "none",
+        "placement": "bottom_left",
+        "text": ""
+      },
+      "details": {
+        "sprocketCount": 0,
+        "railWidth": 0.0,
+        "outerLayer": 0.4,
+        "cornerSize": 0.0,
+        "deckleAmplitude": 0.0,
+        "registrationMarks": false
+      },
+      "recommendedFor": [
+        "竖幅街景",
+        "建筑",
+        "人像"
+      ]
+    },
+    {
+      "id": "editorial_04",
+      "familyId": "editorial",
+      "nameZh": "全景横笺",
+      "nameEn": "Panorama Folio",
+      "descriptionZh": "专为全景推荐的薄上沿、稍宽两侧和签笺式下沿；任何原图均完整适配。",
+      "defaultRatioId": "65:24",
+      "allowedRatioIds": [
+        "source",
+        "auto",
+        "1:1",
+        "4:5",
+        "3:4",
+        "2:3",
+        "4:3",
+        "3:2",
+        "16:9",
+        "9:16",
+        "65:24",
+        "5:7"
+      ],
+      "inset": {
+        "top": 0.035,
+        "right": 0.06,
+        "bottom": 0.1,
+        "left": 0.06
+      },
+      "palette": {
+        "outer": "#DADDD6",
+        "inner": "#F1F3EB",
+        "accent": "#849382",
+        "ink": "#343E33"
+      },
+      "structure": "letterbox",
+      "cornerRadius": 0.0,
+      "innerRule": 0.0008,
+      "grain": 0.0,
+      "annotation": {
+        "mode": "none",
+        "placement": "bottom_left",
+        "text": ""
+      },
+      "details": {
+        "sprocketCount": 0,
+        "railWidth": 0.0,
+        "outerLayer": 0.4,
+        "cornerSize": 0.0,
+        "deckleAmplitude": 0.0,
+        "registrationMarks": false
+      },
+      "recommendedFor": [
+        "全景风光",
+        "山脉",
+        "城市远景"
+      ]
+    },
+    {
+      "id": "editorial_05",
+      "familyId": "editorial",
+      "nameZh": "定位校样",
+      "nameEn": "Registration Proof",
+      "descriptionZh": "均衡纸边、细内框及四角定位标记形成编辑校样感，E-05 为模板识别码。",
+      "defaultRatioId": "4:3",
+      "allowedRatioIds": [
+        "source",
+        "auto",
+        "1:1",
+        "4:5",
+        "3:4",
+        "2:3",
+        "4:3",
+        "3:2",
+        "16:9",
+        "9:16",
+        "65:24",
+        "5:7"
+      ],
+      "inset": {
+        "top": 0.07,
+        "right": 0.065,
+        "bottom": 0.09,
+        "left": 0.065
+      },
+      "palette": {
+        "outer": "#EFEDE6",
+        "inner": "#F8F6F0",
+        "accent": "#B0874E",
+        "ink": "#4C4941"
+      },
+      "structure": "inner_rule",
+      "cornerRadius": 0.0,
+      "innerRule": 0.0018,
+      "grain": 0.0,
+      "annotation": {
+        "mode": "frame_code",
+        "placement": "bottom_right",
+        "text": "E-05"
+      },
+      "details": {
+        "sprocketCount": 0,
+        "railWidth": 0.0,
+        "outerLayer": 0.4,
+        "cornerSize": 0.0,
+        "deckleAmplitude": 0.0,
+        "registrationMarks": true
+      },
+      "recommendedFor": [
+        "建筑",
+        "系列作品",
+        "编辑选片"
+      ]
+    },
+    {
+      "id": "editorial_06",
+      "familyId": "editorial",
+      "nameZh": "画册偏置",
+      "nameEn": "Offset Folio",
+      "descriptionZh": "上侧与左侧留白更宽，使画面整体向右下偏置，形成独立于对称装裱的版面节奏。",
+      "defaultRatioId": "5:7",
+      "allowedRatioIds": [
+        "source",
+        "auto",
+        "1:1",
+        "4:5",
+        "3:4",
+        "2:3",
+        "4:3",
+        "3:2",
+        "16:9",
+        "9:16",
+        "65:24",
+        "5:7"
+      ],
+      "inset": {
+        "top": 0.13,
+        "right": 0.055,
+        "bottom": 0.045,
+        "left": 0.14
+      },
+      "palette": {
+        "outer": "#E8E0D2",
+        "inner": "#F4EDE1",
+        "accent": "#B09D7C",
+        "ink": "#4F4535"
+      },
+      "structure": "asymmetric",
+      "cornerRadius": 0.0,
+      "innerRule": 0.0,
+      "grain": 0.0,
+      "annotation": {
+        "mode": "none",
+        "placement": "bottom_left",
+        "text": ""
+      },
+      "details": {
+        "sprocketCount": 0,
+        "railWidth": 0.0,
+        "outerLayer": 0.4,
+        "cornerSize": 0.0,
+        "deckleAmplitude": 0.0,
+        "registrationMarks": false
+      },
+      "recommendedFor": [
+        "艺术肖像",
+        "静物",
+        "留白构图"
+      ]
+    },
+    {
+      "id": "archive_01",
+      "familyId": "archive",
+      "nameZh": "档案双层",
+      "nameEn": "Archival Double Mat",
+      "descriptionZh": "灰褐外卡与暖白内卡分层，细暗内缘和较宽下沿形成收藏装裱的分量感。",
+      "defaultRatioId": "auto",
+      "allowedRatioIds": [
+        "source",
+        "auto",
+        "1:1",
+        "4:5",
+        "3:4",
+        "2:3",
+        "4:3",
+        "3:2",
+        "16:9",
+        "9:16",
+        "65:24",
+        "5:7"
+      ],
+      "inset": {
+        "top": 0.08,
+        "right": 0.08,
+        "bottom": 0.11,
+        "left": 0.08
+      },
+      "palette": {
+        "outer": "#B8AFA1",
+        "inner": "#F6F1E7",
+        "accent": "#9E8D72",
+        "ink": "#4C4337"
+      },
+      "structure": "double_mat",
+      "cornerRadius": 0.0,
+      "innerRule": 0.001,
+      "grain": 0.024,
+      "annotation": {
+        "mode": "none",
+        "placement": "bottom_left",
+        "text": ""
+      },
+      "details": {
+        "sprocketCount": 0,
+        "railWidth": 0.0,
+        "outerLayer": 0.4,
+        "cornerSize": 0.0,
+        "deckleAmplitude": 0.0,
+        "registrationMarks": false
+      },
+      "recommendedFor": [
+        "作品收藏",
+        "旅行照片",
+        "长期展示"
+      ]
+    },
+    {
+      "id": "archive_02",
+      "familyId": "archive",
+      "nameZh": "四角装订",
+      "nameEn": "Photo-corner Mount",
+      "descriptionZh": "浅色衬纸配四个小型角装标记，角装应落在纸边范围内，避免覆盖照片主体。",
+      "defaultRatioId": "4:5",
+      "allowedRatioIds": [
+        "source",
+        "auto",
+        "1:1",
+        "4:5",
+        "3:4",
+        "2:3",
+        "4:3",
+        "3:2",
+        "16:9",
+        "9:16",
+        "65:24",
+        "5:7"
+      ],
+      "inset": {
+        "top": 0.07,
+        "right": 0.07,
+        "bottom": 0.1,
+        "left": 0.07
+      },
+      "palette": {
+        "outer": "#D9D1C1",
+        "inner": "#EEE7D8",
+        "accent": "#6B604F",
+        "ink": "#4F4436"
+      },
+      "structure": "corner_mount",
+      "cornerRadius": 0.0,
+      "innerRule": 0.0,
+      "grain": 0.0,
+      "annotation": {
+        "mode": "none",
+        "placement": "bottom_left",
+        "text": ""
+      },
+      "details": {
+        "sprocketCount": 0,
+        "railWidth": 0.0,
+        "outerLayer": 0.4,
+        "cornerSize": 0.06,
+        "deckleAmplitude": 0.0,
+        "registrationMarks": false
+      },
+      "recommendedFor": [
+        "家庭档案",
+        "纪念照片",
+        "肖像"
+      ]
+    },
+    {
+      "id": "archive_03",
+      "familyId": "archive",
+      "nameZh": "麻布衬纸",
+      "nameEn": "Linen-backed Mat",
+      "descriptionZh": "宽而均衡的灰米衬纸保持平整纯色，照片边缘用细线收束。",
+      "defaultRatioId": "4:3",
+      "allowedRatioIds": [
+        "source",
+        "auto",
+        "1:1",
+        "4:5",
+        "3:4",
+        "2:3",
+        "4:3",
+        "3:2",
+        "16:9",
+        "9:16",
+        "65:24",
+        "5:7"
+      ],
+      "inset": {
+        "top": 0.09,
+        "right": 0.09,
+        "bottom": 0.115,
+        "left": 0.09
+      },
+      "palette": {
+        "outer": "#C7C1B3",
+        "inner": "#ECE6D9",
+        "accent": "#9A917B",
+        "ink": "#4A4539"
+      },
+      "structure": "linen",
+      "cornerRadius": 0.0,
+      "innerRule": 0.001,
+      "grain": 0.0,
+      "annotation": {
+        "mode": "none",
+        "placement": "bottom_left",
+        "text": ""
+      },
+      "details": {
+        "sprocketCount": 0,
+        "railWidth": 0.0,
+        "outerLayer": 0.4,
+        "cornerSize": 0.0,
+        "deckleAmplitude": 0.0,
+        "registrationMarks": false
+      },
+      "recommendedFor": [
+        "自然摄影",
+        "生活记录",
+        "柔和色彩"
+      ]
+    },
+    {
+      "id": "archive_04",
+      "familyId": "archive",
+      "nameZh": "牛皮纸封",
+      "nameEn": "Kraft Archive",
+      "descriptionZh": "暖棕纸基、轻毛边和较宽下沿组合，A-04 为模板代码，不伪造旧照片日期。",
+      "defaultRatioId": "3:2",
+      "allowedRatioIds": [
+        "source",
+        "auto",
+        "1:1",
+        "4:5",
+        "3:4",
+        "2:3",
+        "4:3",
+        "3:2",
+        "16:9",
+        "9:16",
+        "65:24",
+        "5:7"
+      ],
+      "inset": {
+        "top": 0.08,
+        "right": 0.08,
+        "bottom": 0.14,
+        "left": 0.08
+      },
+      "palette": {
+        "outer": "#B79A70",
+        "inner": "#DDC9A5",
+        "accent": "#7D613D",
+        "ink": "#4F3C23"
+      },
+      "structure": "deckle",
+      "cornerRadius": 0.0,
+      "innerRule": 0.0,
+      "grain": 0.055,
+      "annotation": {
+        "mode": "frame_code",
+        "placement": "bottom_right",
+        "text": "A-04"
+      },
+      "details": {
+        "sprocketCount": 0,
+        "railWidth": 0.0,
+        "outerLayer": 0.4,
+        "cornerSize": 0.0,
+        "deckleAmplitude": 0.002,
+        "registrationMarks": false
+      },
+      "recommendedFor": [
+        "旅行档案",
+        "旧物静物",
+        "自然景物"
+      ]
+    },
+    {
+      "id": "archive_05",
+      "familyId": "archive",
+      "nameZh": "左装订留边",
+      "nameEn": "Binding Margin",
+      "descriptionZh": "左侧加厚的纸边与较短下沿形成装订页比例，细纤维纸基保持平整克制。",
+      "defaultRatioId": "3:4",
+      "allowedRatioIds": [
+        "source",
+        "auto",
+        "1:1",
+        "4:5",
+        "3:4",
+        "2:3",
+        "4:3",
+        "3:2",
+        "16:9",
+        "9:16",
+        "65:24",
+        "5:7"
+      ],
+      "inset": {
+        "top": 0.065,
+        "right": 0.065,
+        "bottom": 0.1,
+        "left": 0.16
+      },
+      "palette": {
+        "outer": "#C4C4B5",
+        "inner": "#EAE9DA",
+        "accent": "#929580",
+        "ink": "#414535"
+      },
+      "structure": "asymmetric",
+      "cornerRadius": 0.0,
+      "innerRule": 0.001,
+      "grain": 0.0,
+      "annotation": {
+        "mode": "none",
+        "placement": "bottom_left",
+        "text": ""
+      },
+      "details": {
+        "sprocketCount": 0,
+        "railWidth": 0.0,
+        "outerLayer": 0.4,
+        "cornerSize": 0.0,
+        "deckleAmplitude": 0.0,
+        "registrationMarks": false
+      },
+      "recommendedFor": [
+        "家庭相册",
+        "纪实肖像",
+        "摄影笔记"
+      ]
+    },
+    {
+      "id": "archive_06",
+      "familyId": "archive",
+      "nameZh": "藏品编号",
+      "nameEn": "Collection Number",
+      "descriptionZh": "薄侧边、宽下沿的平整衬纸配小型居中模板编号与较清晰内线，适合系列展示。",
+      "defaultRatioId": "5:7",
+      "allowedRatioIds": [
+        "source",
+        "auto",
+        "1:1",
+        "4:5",
+        "3:4",
+        "2:3",
+        "4:3",
+        "3:2",
+        "16:9",
+        "9:16",
+        "65:24",
+        "5:7"
+      ],
+      "inset": {
+        "top": 0.06,
+        "right": 0.06,
+        "bottom": 0.14,
+        "left": 0.06
+      },
+      "palette": {
+        "outer": "#D7D0C4",
+        "inner": "#ECE5DA",
+        "accent": "#A08F75",
+        "ink": "#544936"
+      },
+      "structure": "linen",
+      "cornerRadius": 0.003,
+      "innerRule": 0.003,
+      "grain": 0.0,
+      "annotation": {
+        "mode": "frame_code",
+        "placement": "bottom_center",
+        "text": "A-06"
+      },
+      "details": {
+        "sprocketCount": 0,
+        "railWidth": 0.0,
+        "outerLayer": 0.4,
+        "cornerSize": 0.0,
+        "deckleAmplitude": 0.0,
+        "registrationMarks": false
+      },
+      "recommendedFor": [
+        "系列作品",
+        "艺术肖像",
+        "收藏展示"
+      ]
+    }
+  ],
+  "initialSelection": {
+    "ratioMode": "locked",
+    "ratioId": "source"
+  }
+}

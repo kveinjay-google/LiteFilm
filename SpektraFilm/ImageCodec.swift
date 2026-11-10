@@ -316,7 +316,7 @@ enum ImageCodec {
     static func write(_ image: CGImage, format: ExportFormat) throws -> URL {
         let ext = format.utType.preferredFilenameExtension ?? format.rawValue
         let url = FileManager.default.temporaryDirectory
-            .appendingPathComponent("SpektraFilm-\(UUID().uuidString)")
+            .appendingPathComponent("LiteFilm-\(UUID().uuidString)")
             .appendingPathExtension(ext)
         try write(image, format: format, to: url)
         return url

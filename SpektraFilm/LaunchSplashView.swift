@@ -15,7 +15,7 @@ struct LaunchSplashView: View {
                 .accessibilityHidden(true)
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("SPEKTRAFILM")
+        .accessibilityLabel("LiteFilm")
     }
 }
 

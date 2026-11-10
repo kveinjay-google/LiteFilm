@@ -198,6 +198,7 @@ def bundle_resources() -> None:
     app = Path(env("TARGET_BUILD_DIR")) / wrapper
     if not app.is_dir():
         app.mkdir(parents=True)
+    shutil.copy2(ROOT / "SpektraFilm" / "PrivacyInfo.xcprivacy", app / "PrivacyInfo.xcprivacy")
     destination = app / "engine"
     if destination.exists():
         shutil.rmtree(destination)

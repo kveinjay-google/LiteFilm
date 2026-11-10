@@ -131,7 +131,7 @@ def main() -> None:
     w(f"\t\t{sample_ref} /* SampleBars.png */ = {{isa = PBXFileReference; lastKnownFileType = image.png; path = SampleBars.png; sourceTree = \"<group>\"; }};")
     w(f"\t\t{launch_ref} /* LaunchScreen.storyboard */ = {{isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = \"<group>\"; }};")
     w(f"\t\t{asset_ref} /* Assets.xcassets */ = {{isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = \"<group>\"; }};")
-    w(f"\t\t{app_ref} /* SpektraFilm.app */ = {{isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = SpektraFilm.app; sourceTree = BUILT_PRODUCTS_DIR; }};")
+    w(f"\t\t{app_ref} /* LiteFilm.app */ = {{isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LiteFilm.app; sourceTree = BUILT_PRODUCTS_DIR; }};")
     for name, ref, _ in frameworks:
         w(
             f"\t\t{ref} /* {name}.framework */ = {{isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = {name}.framework; path = System/Library/Frameworks/{name}.framework; sourceTree = SDKROOT; }};"
@@ -162,7 +162,7 @@ def main() -> None:
     w(f"\t\t{products_group} /* Products */ = {{")
     w("\t\t\tisa = PBXGroup;")
     w("\t\t\tchildren = (")
-    w(f"\t\t\t\t{app_ref} /* SpektraFilm.app */,")
+    w(f"\t\t\t\t{app_ref} /* LiteFilm.app */,")
     w("\t\t\t);")
     w("\t\t\tname = Products;")
     w("\t\t\tsourceTree = \"<group>\";")
@@ -209,7 +209,7 @@ def main() -> None:
     w("\t\t\t);")
     w("\t\t\tname = SpektraFilm;")
     w("\t\t\tproductName = SpektraFilm;")
-    w(f"\t\t\tproductReference = {app_ref} /* SpektraFilm.app */;")
+    w(f"\t\t\tproductReference = {app_ref} /* LiteFilm.app */;")
     w("\t\t\tproductType = \"com.apple.product-type.application\";")
     w("\t\t};")
     end("PBXNativeTarget")
@@ -344,12 +344,14 @@ def main() -> None:
         "CODE_SIGNING_REQUIRED": "YES",
         "CODE_SIGN_IDENTITY": '"Apple Development"',
         "CODE_SIGN_STYLE": "Automatic",
-        "CURRENT_PROJECT_VERSION": "1",
+        "CURRENT_PROJECT_VERSION": "2",
         "DEVELOPMENT_TEAM": "267KQ4A3N4",
         "ENABLE_PREVIEWS": "NO",
         "GENERATE_INFOPLIST_FILE": "YES",
         "HEADER_SEARCH_PATHS": '"$(SRCROOT)/vendor/SpektraLab/engine/include"',
         "INFOPLIST_KEY_CFBundleDisplayName": "LiteFilm",
+        "INFOPLIST_KEY_CFBundleName": "LiteFilm",
+        "INFOPLIST_KEY_ITSAppUsesNonExemptEncryption": "NO",
         "INFOPLIST_KEY_LSApplicationCategoryType": "public.app-category.photography",
         "INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents": "YES",
         # An empty UILaunchScreen dictionary replaces the storyboard and stays blank.
@@ -362,7 +364,7 @@ def main() -> None:
         "MARKETING_VERSION": "0.1.0",
         "OTHER_LDFLAGS": '"$(inherited) -lspektrafilm_engine -lc++"',
         "PRODUCT_BUNDLE_IDENTIFIER": "com.spektrafilm.ios",
-        "PRODUCT_NAME": "$(TARGET_NAME)",
+        "PRODUCT_NAME": "LiteFilm",
         "SWIFT_EMIT_LOC_STRINGS": "YES",
         "SWIFT_OBJC_BRIDGING_HEADER": "SpektraFilm/SpektraFilm-Bridging-Header.h",
         "SWIFT_STRICT_CONCURRENCY": "minimal",
@@ -450,7 +452,7 @@ def main() -> None:
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "{target}"
-               BuildableName = "SpektraFilm.app"
+               BuildableName = "LiteFilm.app"
                BlueprintName = "SpektraFilm"
                ReferencedContainer = "container:SpektraFilm.xcodeproj">
             </BuildableReference>
@@ -478,7 +480,7 @@ def main() -> None:
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "{target}"
-            BuildableName = "SpektraFilm.app"
+            BuildableName = "LiteFilm.app"
             BlueprintName = "SpektraFilm"
             ReferencedContainer = "container:SpektraFilm.xcodeproj">
          </BuildableReference>
@@ -495,7 +497,7 @@ def main() -> None:
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "{target}"
-            BuildableName = "SpektraFilm.app"
+            BuildableName = "LiteFilm.app"
             BlueprintName = "SpektraFilm"
             ReferencedContainer = "container:SpektraFilm.xcodeproj">
          </BuildableReference>

@@ -929,6 +929,13 @@ private struct AboutSheet: View {
                         body: "Copyright Apple Inc.，Apache License 2.0。"
                     )
 
+                    VStack(alignment: .leading, spacing: 14) {
+                        Link("隐私政策", destination: URL(string: "https://www.superaitest.com/litefilm/privacy.html")!)
+                        Link("使用帮助与技术支持", destination: URL(string: "https://www.superaitest.com/litefilm/#support")!)
+                        Link("开源代码", destination: URL(string: "https://github.com/kveinjay-google/LiteFilm")!)
+                    }
+                    .foregroundStyle(Ink.amber)
+
                     creditsBlock
                 }
                 .padding(.horizontal, 18)

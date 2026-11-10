@@ -15,6 +15,10 @@ struct EditSnapshot: Equatable {
 @MainActor
 final class LabModel: ObservableObject {
     @Published var preview: UIImage?
+    /// Upright source, bounded to the same edge as the working preview, without edits.
+    @Published private(set) var originalPreview: UIImage?
+    @Published private(set) var catalogThumbs: [String: UIImage] = [:]
+    @Published private(set) var watermarkThumbs: [String: UIImage] = [:]
     @Published var busy = false
     @Published var status = "正在准备引擎"
     @Published var errorText: String?
@@ -42,6 +46,22 @@ final class LabModel: ObservableObject {
     @Published var noticeText: String?
 
     private let engine = EngineClient()
+    private let catalogEngine = EngineClient()
+    private var catalogThumbTask: Task<Void, Never>?
+    private var catalogThumbToken = 0
+    private var catalogThumbContexts: [String: String] = [:]
+    private var catalogActiveContext = ""
+    private var catalogRequestedPapers: Bool?
+    private var catalogSource: FrameBuffer?
+    private var sourceRevision = 0
+    private struct WatermarkThumbContext: Equatable, Sendable {
+        var identity: WatermarkIdentity
+        var context: WatermarkContext
+        var presets: [WatermarkPreset]
+    }
+    private var watermarkThumbContext: WatermarkThumbContext?
+    private var watermarkThumbTask: Task<Void, Never>?
+    private var watermarkThumbToken = 0
     private let defaults: UserDefaults
     private var sourceData: Data?
     private var sourcePixel = CGSize(width: 3, height: 2)
@@ -74,6 +94,9 @@ final class LabModel: ObservableObject {
     }
 
     var filmLabel: String { catalog.film(filmID)?.name ?? "" }
+
+    /// The current film treatment without any mat or watermark, for the no-frame option.
+    var unframedThumbnail: UIImage? { thumbPhoto.map { UIImage(cgImage: $0) } }
 
     var frameBadge: String {
         guard frame.enabled, let preset = frameCatalog.frame(frame.activeFrameId) else { return "无框" }
@@ -509,6 +532,18 @@ final class LabModel: ObservableObject {
         logLine("SPEKTRAFILM_WATERMARK_DRAG_SAVE x=\(watermark.offsetX) y=\(watermark.offsetY) mark=\(markID)")
     }
 
+    func chooseWatermark(_ id: String) {
+        flushPending()
+        guard let preset = watermarkCatalog.preset(id) else { return }
+        let before = snapshot()
+        watermark.enabled = true
+        watermark.activeID = preset.id
+        guard snapshot() != before else { return }
+        pushUndo(before)
+        persist()
+        refreshAppearance()
+    }
+
     func chooseFrame(_ id: String) {
         flushPending()
         guard let preset = frameCatalog.frame(id) else { return }
@@ -591,7 +626,7 @@ final class LabModel: ObservableObject {
         let frameID = enabled ? frame.activeFrameId : "none"
         let markOn = includeWatermark && watermark.enabled
         let mark = markOn ? watermarkCatalog.preset(watermark.activeID) : nil
-        let markInfo = watermarkContext
+        let overlay = includeWatermark ? watermarkDraw() : nil
         let drawFrame = includeFrame && enabled
         inFlight = true
         busy = true
@@ -622,7 +657,6 @@ final class LabModel: ObservableObject {
                     } else {
                         request = nil
                     }
-                    let overlay = mark.map { WatermarkDraw(preset: $0, context: markInfo) }
                     let image = LabModel.compose(photo: output.image, frame: request, watermark: overlay) ?? output.image
                     let url = try ImageCodec.write(image, format: format)
                     return (url, image.width, image.height, output.elapsedMS)
@@ -657,9 +691,11 @@ final class LabModel: ObservableObject {
     }
 
     private func use(data: Data, title: String, importID: String?) async throws {
-        let decoded = try await Task.detached {
-            try ImageCodec.decode(data, maxLongEdge: MemoryTier.previewLongEdge)
+        let source = try await Task.detached {
+            let decoded = try ImageCodec.decode(data, maxLongEdge: MemoryTier.previewLongEdge)
+            return (decoded, try Self.originalImage(decoded))
         }.value
+        let decoded = source.0
         while inFlight {
             try? await Task.sleep(nanoseconds: 40_000_000)
         }
@@ -669,7 +705,6 @@ final class LabModel: ObservableObject {
         let backupProcessed = processed
         let backupKey = processedKey
         let backupPreview = preview
-        let backupOpen = engineOpen
         let backupImport = sourceImportID
         sourceData = data
         sourcePixel = ImageCodec.orientedPixelSize(data) ?? CGSize(width: decoded.width, height: decoded.height)
@@ -679,21 +714,224 @@ final class LabModel: ObservableObject {
         await renderNow(decoded: decoded)
         guard errorText == nil, preview != nil else {
             let message = errorText ?? "导入失败"
-            if backupPreview != nil {
-                sourceData = backupData
-                sourceTitle = backupTitle
-                sourcePixel = backupPixel
-                processed = backupProcessed
-                processedKey = backupKey
-                preview = backupPreview
-                sourceImportID = backupImport
-                engineOpen = false
-                _ = backupOpen
-            }
+            sourceData = backupData
+            sourceTitle = backupTitle
+            sourcePixel = backupPixel
+            processed = backupProcessed
+            processedKey = backupKey
+            preview = backupPreview
+            sourceImportID = backupImport
+            engineOpen = false
             errorText = message
             status = "导入失败"
             throw EngineError.message(message)
         }
+        originalPreview = UIImage(cgImage: source.1)
+        sourceRevision += 1
+        catalogThumbToken += 1
+        catalogThumbTask?.cancel()
+        catalogThumbTask = nil
+        catalogActiveContext = ""
+        catalogThumbContexts = [:]
+        catalogThumbs = [:]
+        catalogSource = nil
+        if let papers = catalogRequestedPapers {
+            Task { await requestCatalogThumbnails(papers: papers) }
+        }
+    }
+
+    /// Convert the already orientation-corrected Display-P3 decode; never decode a full original for comparison.
+    private nonisolated static func originalImage(_ frame: FrameBuffer) throws -> CGImage {
+        var bytes = [UInt8](repeating: 255, count: frame.width * frame.height * 4)
+        for pixel in 0..<(frame.width * frame.height) {
+            for channel in 0..<3 {
+                bytes[pixel * 4 + channel] = UInt8(min(255, max(0, (frame.pixels[pixel * 3 + channel] * 255).rounded())))
+            }
+        }
+        guard let provider = CGDataProvider(data: Data(bytes) as CFData),
+              let space = CGColorSpace(name: CGColorSpace.displayP3),
+              let image = CGImage(width: frame.width, height: frame.height, bitsPerComponent: 8,
+                                  bitsPerPixel: 32, bytesPerRow: frame.width * 4, space: space,
+                                  bitmapInfo: CGBitmapInfo(rawValue: CGImageAlphaInfo.premultipliedLast.rawValue | CGBitmapInfo.byteOrder32Big.rawValue),
+                                  provider: provider, decode: nil, shouldInterpolate: true, intent: .defaultIntent)
+        else { throw EngineError.message("无法生成原图预览。") }
+        return image
+    }
+
+    /// One small serial engine renders actual film/paper alternatives, without changing the editor session.
+    /// Cache is limited to one 160px image per catalog entry for the current source/context.
+    func requestCatalogThumbnails(papers: Bool) async {
+        catalogRequestedPapers = papers
+        guard started, let data = sourceData,
+              let resources = Bundle.main.url(forResource: "engine", withExtension: nil) else { return }
+        let prefix = papers ? "paper:" : "film:"
+        let context = "\(prefix)\(sourceRevision)|\(filmID)|\(paperID)|\(exposureEV)"
+        if catalogThumbContexts[prefix] != context {
+            catalogThumbs = catalogThumbs.filter { !$0.key.hasPrefix(prefix) }
+            catalogThumbContexts[prefix] = context
+        }
+        if catalogActiveContext == context, let task = catalogThumbTask {
+            await withTaskCancellationHandler {
+                await task.value
+            } onCancel: {
+                task.cancel()
+            }
+            guard !Task.isCancelled, catalogThumbContexts[prefix] == context else { return }
+        }
+        let stocks = papers ? catalog.papers : catalog.films
+        let jobs: [(String, RenderParams)] = stocks.compactMap { stock in
+            let key = prefix + stock.id
+            guard catalogThumbs[key] == nil else { return nil }
+            let target = stock.targetPrint.flatMap { catalog.paper($0)?.id } ?? paperID
+            return (key, RenderParams(film: papers ? filmID : stock.id,
+                                      paper: papers ? stock.id : target,
+                                      // The wire schema requires >=800; the engine never upscales the 160px source.
+                                      exposureEV: exposureEV, previewLongEdge: 800))
+        }
+        guard !jobs.isEmpty else { return }
+        catalogThumbToken += 1
+        let token = catalogThumbToken
+        catalogThumbTask?.cancel()
+        catalogActiveContext = context
+        let engine = catalogEngine
+        let cachedSource = catalogSource
+        let task = Task.detached(priority: .utility) { [weak self] in
+            do {
+                try Task.checkCancellation()
+                let small = try cachedSource ?? ImageCodec.decode(data, maxLongEdge: 160)
+                try Task.checkCancellation()
+                await MainActor.run { [weak self] in
+                    guard let self, self.catalogThumbToken == token else { return }
+                    self.catalogSource = small
+                }
+                try engine.start(resources: resources)
+                for (key, params) in jobs {
+                    try Task.checkCancellation()
+                    // Open on the captured frame every time: a canceled generation can never reuse a newer source session.
+                    let output = try engine.renderPreview(frame: small, params: params)
+                    try Task.checkCancellation()
+                    await MainActor.run { [weak self] in
+                        guard let self, self.catalogThumbToken == token else { return }
+                        self.catalogThumbs[key] = UIImage(cgImage: output.image)
+                    }
+                }
+            } catch is CancellationError {
+                // The next source/tab owns the queue; stale results never reach the UI.
+            } catch {
+                logLine("LITEFILM_CATALOG_THUMBS_FAIL \(error.localizedDescription)")
+            }
+            await MainActor.run { [weak self] in
+                guard let self, self.catalogThumbToken == token else { return }
+                self.catalogThumbTask = nil
+                self.catalogActiveContext = ""
+            }
+        }
+        catalogThumbTask = task
+        await withTaskCancellationHandler {
+            await task.value
+        } onCancel: {
+            task.cancel()
+        }
+    }
+
+    /// Actual preset drawings on a plain neutral surface; no sample photograph or invented metadata.
+    func requestWatermarkThumbnails() async {
+        let context = WatermarkThumbContext(identity: watermark.identity, context: watermarkContext,
+                                            presets: watermarkCatalog.presets)
+        if watermarkThumbContext != context {
+            watermarkThumbToken += 1
+            watermarkThumbTask?.cancel()
+            watermarkThumbTask = nil
+            watermarkThumbs = [:]
+            watermarkThumbContext = context
+        } else if let task = watermarkThumbTask {
+            await task.value
+            guard !Task.isCancelled, watermarkThumbContext == context else { return }
+        }
+        let jobs = context.presets.filter { watermarkThumbs[$0.id] == nil }
+        guard !jobs.isEmpty else { return }
+        watermarkThumbToken += 1
+        let token = watermarkThumbToken
+        let task = Task.detached(priority: .utility) { [weak self] in
+            if !Task.isCancelled, let base = Self.watermarkThumbnailSurface(),
+               let background = FramePainter.pixels8(base) {
+                for preset in jobs {
+                    if Task.isCancelled { break }
+                    let image = autoreleasepool { () -> CGImage? in
+                        guard let painted = WatermarkPainter.apply(base, preset: preset, info: context.context,
+                                                                   identity: context.identity, offset: .zero)
+                        else { return nil }
+                        return Self.focusedWatermarkThumbnail(painted, background: background.bytes)
+                    }
+                    if Task.isCancelled { break }
+                    if let image {
+                        await MainActor.run { [weak self] in
+                            guard let self, self.watermarkThumbToken == token else { return }
+                            self.watermarkThumbs[preset.id] = UIImage(cgImage: image)
+                        }
+                    }
+                }
+            }
+            await MainActor.run { [weak self] in
+                guard let self, self.watermarkThumbToken == token else { return }
+                self.watermarkThumbTask = nil
+            }
+        }
+        watermarkThumbTask = task
+        await withTaskCancellationHandler {
+            await task.value
+        } onCancel: {
+            task.cancel()
+        }
+    }
+
+    private nonisolated static func watermarkThumbnailSurface() -> CGImage? {
+        guard let space = CGColorSpace(name: CGColorSpace.sRGB),
+              let context = CGContext(data: nil, width: 960, height: 640, bitsPerComponent: 8,
+                                      bytesPerRow: 960 * 4, space: space,
+                                      bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
+        else { return nil }
+        context.setFillColor(CGColor(colorSpace: space, components: [23/255, 26/255, 30/255, 1])!)
+        context.fill(CGRect(x: 0, y: 0, width: 960, height: 640))
+        return context.makeImage()
+    }
+
+    /// Enlarge the entire visible mark, preserving the relative positions of multi-part presets.
+    /// The source is fixed at 960×640; one scan and crop run at a time, and only a 240px result is cached.
+    private nonisolated static func focusedWatermarkThumbnail(_ image: CGImage, background: [UInt8]) -> CGImage? {
+        guard let pixels = FramePainter.pixels8(image), pixels.bytes.count == background.count else { return nil }
+        var left = pixels.width
+        var top = pixels.height
+        var right = -1
+        var bottom = -1
+        for y in 0..<pixels.height {
+            if y % 64 == 0, Task.isCancelled { return nil }
+            for x in 0..<pixels.width {
+                let i = (y * pixels.width + x) * 4
+                let difference = max(abs(Int(pixels.bytes[i]) - Int(background[i])),
+                                     abs(Int(pixels.bytes[i + 1]) - Int(background[i + 1])),
+                                     abs(Int(pixels.bytes[i + 2]) - Int(background[i + 2])))
+                if difference > 4 {
+                    left = min(left, x)
+                    right = max(right, x)
+                    top = min(top, y)
+                    bottom = max(bottom, y)
+                }
+            }
+        }
+        guard right >= left, bottom >= top else { return FramePainter.downsample(image, longEdge: 240) }
+        // pixels8 explicitly flips the bitmap vertically; CGImage cropping uses its native row order.
+        let bounds = CGRect(x: left, y: pixels.height - bottom - 1,
+                            width: right - left + 1, height: bottom - top + 1)
+        let padding = max(18, min(bounds.width, bounds.height) * 0.24)
+        let paddedWidth = bounds.width + padding * 2
+        let paddedHeight = bounds.height + padding * 2
+        let width = min(CGFloat(image.width), max(paddedWidth, paddedHeight * 1.5))
+        let height = min(CGFloat(image.height), width / 1.5)
+        let x = max(0, min(CGFloat(image.width) - width, bounds.midX - width / 2))
+        let y = max(0, min(CGFloat(image.height) - height, bounds.midY - height / 2))
+        let rect = CGRect(x: x, y: y, width: width, height: height).integral
+        return FramePainter.downsample(image.cropping(to: rect) ?? image, longEdge: 240)
     }
 
     private func applyFilm(_ id: String, paperOverride: String?) {

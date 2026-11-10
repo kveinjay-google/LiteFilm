@@ -17,7 +17,7 @@ struct PrintViewport: View {
     var body: some View {
         ZStack {
             RoundedRectangle(cornerRadius: 4, style: .continuous)
-                .fill(Color(red: 0.09, green: 0.082, blue: 0.074))
+                .fill(Ink.void)
             FrameStage(
                 image: model.preview,
                 zoom: zoom,
@@ -96,49 +96,6 @@ struct PrintViewport: View {
             }
         }
         .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
-        .overlay(alignment: .top) {
-            VStack(spacing: 6) {
-                watermarkBadge
-                if watermarkDragging {
-                    Text("拖动署名 · 松手保存")
-                        .font(.caption2.weight(.medium))
-                        .foregroundStyle(Ink.amber)
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 4)
-                        .background(.black.opacity(0.55), in: Capsule())
-                        .transition(.opacity)
-                }
-            }
-            .padding(.top, 2)
-            .animation(reduceMotion ? nil : .easeInOut(duration: 0.2), value: watermarkDragging)
-        }
-        .overlay(alignment: .bottom) {
-            badge.padding(.bottom, 0)
-        }
-        .overlay {
-            RoundedRectangle(cornerRadius: 4, style: .continuous)
-                .stroke(Ink.hairline, lineWidth: 1)
-                .allowsHitTesting(false)
-        }
-        .padding(.horizontal, 12)
-        .padding(.bottom, 4)
-        .onAppear { badgePulse += 1 }
-        .onChange(of: model.frameBadge) { _, _ in
-            badgePulse += 1
-            badgeBright = true
-        }
-        .onChange(of: model.watermarkBadge) { _, _ in
-            markPulse += 1
-            markBright = true
-        }
-        .task(id: badgePulse) {
-            try? await Task.sleep(nanoseconds: 2_200_000_000)
-            badgeBright = false
-        }
-        .task(id: markPulse) {
-            try? await Task.sleep(nanoseconds: 2_200_000_000)
-            markBright = false
-        }
         .accessibilityElement(children: .contain)
         .accessibilityAction(named: "下一款相框") { model.commitMove(.nextStyle) }
         .accessibilityAction(named: "上一款相框") { model.commitMove(.previousStyle) }
@@ -325,7 +282,7 @@ private struct FrameScrubber: View {
     private func cell(_ entry: FrameScrubEntry) -> some View {
         let selected = entry.id == (position ?? selectedID)
         return Text(entry.title)
-            .font(.system(size: 12, weight: selected ? .semibold : .medium, design: .serif))
+            .font(.system(size: 12, weight: selected ? .semibold : .medium, design: .default))
             .foregroundStyle(selected ? Ink.ivory : Ink.mute)
             .lineLimit(1)
             .minimumScaleFactor(0.6)
@@ -379,7 +336,7 @@ struct FrameGallerySheet: View {
                     } label: {
                         HStack {
                             Text("无框")
-                                .font(.system(.body, design: .serif))
+                                .font(.system(.body, design: .default))
                             Spacer()
                             if !model.frame.enabled {
                                 Image(systemName: "checkmark")
@@ -516,7 +473,7 @@ struct FrameGallerySheet: View {
                     }
                 }
                 Text(preset.nameZh)
-                    .font(.system(size: 11, weight: .medium, design: .serif))
+                    .font(.system(size: 11, weight: .medium, design: .default))
                     .foregroundStyle(Ink.ivory)
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
@@ -642,7 +599,7 @@ private struct FrameStage: UIViewRepresentable {
             imageView.contentMode = .scaleAspectFit
             imageView.isUserInteractionEnabled = false
             imageView.layer.shadowColor = UIColor.black.cgColor
-            imageView.layer.shadowOpacity = 0.45
+            imageView.layer.shadowOpacity = 0
             imageView.layer.shadowRadius = 18
             imageView.layer.shadowOffset = CGSize(width: 0, height: 8)
             addSubview(imageView)
@@ -652,7 +609,7 @@ private struct FrameStage: UIViewRepresentable {
 
         override func layoutSubviews() {
             super.layoutSubviews()
-            let inset = bounds.insetBy(dx: 10, dy: 10)
+            let inset = bounds
             imageView.bounds = CGRect(origin: .zero, size: inset.size)
             imageView.center = CGPoint(x: bounds.midX, y: bounds.midY)
         }

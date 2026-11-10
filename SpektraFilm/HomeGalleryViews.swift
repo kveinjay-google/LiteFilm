@@ -1,981 +1,636 @@
+import ImageIO
 import PhotosUI
 import SwiftUI
 import UIKit
 
-/// Launch home: blank develop slot on top, recent gallery pieces below (museum wall).
+/// The home and collection observe the store itself: item changes do not publish on LabModel.
 struct HomeColorChartView: View {
     @ObservedObject var model: LabModel
+    @ObservedObject private var gallery: ImportGalleryStore
     @Binding var pickerItem: PhotosPickerItem?
     var onOpenGallery: () -> Void
+    var onOpenSettings: () -> Void
+    @State private var selectedID: String?
 
-    private var recent: [GalleryItem] {
-        model.gallery.recent(limit: 9)
+    init(model: LabModel, pickerItem: Binding<PhotosPickerItem?>,
+         onOpenGallery: @escaping () -> Void, onOpenSettings: @escaping () -> Void = {}) {
+        self.model = model
+        self.gallery = model.gallery
+        self._pickerItem = pickerItem
+        self.onOpenGallery = onOpenGallery
+        self.onOpenSettings = onOpenSettings
     }
+
+    private var recent: [GalleryItem] { gallery.recent(limit: 12) }
+    private var selected: GalleryItem? { recent.first { $0.id == selectedID } ?? recent.first }
 
     var body: some View {
         GeometryReader { geo in
-            let landscape = geo.size.width > geo.size.height + 40
+            let landscape = geo.size.width > geo.size.height
             VStack(spacing: 0) {
-                homeTopBar
+                CollectionHeader(title: "LiteFilm", brand: true) {
+                    Button(action: onOpenSettings) {
+                        Image(systemName: "gearshape").collectionIcon()
+                    }
+                    .accessibilityLabel("设置")
+                } trailing: {
+                    importPicker(iconOnly: true)
+                }
+                CollectionStatus(model: model)
                 ScrollView {
-                    VStack(alignment: .leading, spacing: landscape ? 18 : 22) {
-                        developSlot(landscape: landscape)
-                            .padding(.top, 8)
-                        if !recent.isEmpty {
-                            Text("最近")
-                                .font(.system(size: 12, weight: .semibold, design: .serif))
-                                .foregroundStyle(GalleryInk.mute)
-                                .tracking(1.4)
-                                .padding(.horizontal, 4)
-                            recentGrid(landscape: landscape)
+                    VStack(spacing: 18) {
+                        HStack(alignment: .firstTextBaseline) {
+                            Text("最近作品")
+                                .font(.headline)
+                                .foregroundStyle(Ink.ivory)
+                            Spacer()
+                            Button(action: onOpenGallery) {
+                                HStack(spacing: 5) {
+                                    Text("全部作品")
+                                    Image(systemName: "arrow.up.right")
+                                }
+                                .font(.subheadline.weight(.medium))
+                                .foregroundStyle(Ink.mute)
+                                .frame(minHeight: 44)
+                            }
+                            .disabled(model.busy)
+                        }
+                        .padding(.horizontal, 20)
+                        if let item = selected {
+                            hero(item, height: landscape ? 230 : min(geo.size.height * 0.50, 480))
+                            recentStrip
                         } else {
-                            emptyHint
+                            emptyHome(height: landscape ? 210 : max(250, geo.size.height * 0.48))
                         }
                     }
-                    .padding(.horizontal, landscape ? 22 : 18)
-                    .padding(.bottom, 28)
+                    .padding(.bottom, 20)
                 }
+                importPicker(iconOnly: false)
+                    .padding(.horizontal, 20)
+                    .padding(.top, 10)
+                    .padding(.bottom, 12)
             }
-            .frame(width: geo.size.width, height: geo.size.height)
-            .background {
-                GalleryWallBackground()
-                    .ignoresSafeArea()
-            }
-        }
-    }
-
-    private var homeTopBar: some View {
-        HStack(spacing: 8) {
-            Text("LiteFilm")
-                .font(.system(size: 17, weight: .medium, design: .serif))
-                .foregroundStyle(GalleryInk.ink)
-            Spacer(minLength: 8)
-            Button(action: onOpenGallery) {
-                Text("全部")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(GalleryInk.mute)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 7)
-                    .background(Color.black.opacity(0.04), in: Capsule())
-                    .overlay(Capsule().stroke(GalleryInk.stroke, lineWidth: 1))
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("打开全部画廊")
-        }
-        .padding(.horizontal, 18)
-        .padding(.top, 10)
-        .padding(.bottom, 6)
-    }
-
-    private func developSlot(landscape: Bool) -> some View {
-        PhotosPicker(selection: $pickerItem, matching: PhotoImport.pickerFilter, preferredItemEncoding: PhotoImport.preferredEncoding) {
-            ZStack {
-                // Empty mat hanging on the wall
-                RoundedRectangle(cornerRadius: 3, style: .continuous)
-                    .fill(Color.black.opacity(0.10))
-                    .offset(y: 5)
-                    .blur(radius: 6)
-
-                RoundedRectangle(cornerRadius: 2, style: .continuous)
-                    .fill(
-                        LinearGradient(
-                            colors: [
-                                Color(red: 0.22, green: 0.18, blue: 0.14),
-                                Color(red: 0.12, green: 0.10, blue: 0.08),
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-
-                RoundedRectangle(cornerRadius: 1, style: .continuous)
-                    .fill(Color(red: 0.97, green: 0.96, blue: 0.93))
-                    .padding(10)
-
-                VStack(spacing: 10) {
-                    Image(systemName: "plus")
-                        .font(.system(size: 22, weight: .medium))
-                        .foregroundStyle(Ink.amber)
-                    Text("新冲洗")
-                        .font(.system(size: 15, weight: .medium, design: .serif))
-                        .foregroundStyle(GalleryInk.ink)
-                }
-            }
-            .frame(maxWidth: .infinity)
-            .frame(height: landscape ? 168 : 200)
-            .contentShape(Rectangle())
+            .background(Ink.void.ignoresSafeArea())
         }
         .buttonStyle(.plain)
-        .disabled(model.busy)
-        .accessibilityLabel("新冲洗")
-        .accessibilityHint("选择照片开始冲洗")
-    }
-
-    private func recentGrid(landscape: Bool) -> some View {
-        let columnsCount = landscape ? 4 : 3
-        let columns = Array(repeating: GridItem(.flexible(), spacing: 14), count: columnsCount)
-        return LazyVGrid(columns: columns, spacing: 16) {
-            ForEach(recent) { item in
-                Button {
-                    Task { await model.openImport(id: item.id) }
-                } label: {
-                    FramedWallArt(
-                        image: model.gallery.loadThumb(for: item),
-                        plaque: recentPlaque(item),
-                        matInset: 7,
-                        framePad: 5,
-                        shadowRadius: 8,
-                        corner: 2,
-                        lockPortraitAspect: true
-                    )
-                }
-                .buttonStyle(.plain)
-                .contextMenu {
-                    Button("打开") {
-                        Task { await model.openImport(id: item.id) }
-                    }
-                    Button("删除", role: .destructive) {
-                        Task { await model.deleteImport(id: item.id) }
-                    }
-                }
-                .accessibilityLabel(item.title)
+        .onChange(of: gallery.items) { _, items in
+            if let selectedID, !items.contains(where: { $0.id == selectedID }) {
+                self.selectedID = nil
             }
         }
     }
 
-    private var emptyHint: some View {
-        Text("点上方空白框，选一张照片开始冲洗")
-            .font(.system(size: 13, weight: .medium, design: .serif))
-            .foregroundStyle(GalleryInk.mute)
-            .frame(maxWidth: .infinity)
+    private func hero(_ item: GalleryItem, height: CGFloat) -> some View {
+        VStack(spacing: 0) {
+            Button { open(item) } label: {
+                CollectionPhoto(
+                    url: item.isVariant ? gallery.thumbURL(for: item) : gallery.originalURL(for: item),
+                    fallback: item.isVariant ? nil : gallery.thumbURL(for: item), fit: true
+                )
+                    .frame(height: height)
+                    .frame(maxWidth: .infinity)
+                    .contentShape(Rectangle())
+            }
+            .disabled(model.busy)
+            .accessibilityLabel("继续编辑，\(item.title)")
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(item.title).font(.subheadline.weight(.medium)).lineLimit(1)
+                    Text(item.isVariant ? "已保存方案" : item.createdAt.formatted(date: .abbreviated, time: .omitted))
+                        .font(.caption).foregroundStyle(Ink.mute)
+                }
+                Spacer(minLength: 8)
+                Button { open(item) } label: {
+                    Label("继续编辑", systemImage: "arrow.up.right")
+                        .font(.subheadline.weight(.medium))
+                        .frame(minHeight: 44)
+                }
+                .disabled(model.busy)
+            }
+            .foregroundStyle(Ink.ivory)
+            .padding(.horizontal, 20)
             .padding(.top, 8)
-            .padding(.bottom, 4)
+        }
     }
 
-    private func recentPlaque(_ item: GalleryItem) -> String {
-        if item.isVariant {
-            return item.title.split(separator: "·").first.map(String.init)?.trimmingCharacters(in: .whitespaces) ?? "方案"
+    private var recentStrip: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 10) {
+                ForEach(recent) { item in
+                    Button { selectedID = item.id } label: {
+                        CollectionPhoto(url: gallery.thumbURL(for: item), fallback: item.isVariant ? nil : gallery.originalURL(for: item))
+                            .frame(width: 104, height: 104)
+                            .clipShape(RoundedRectangle(cornerRadius: 4))
+                            .overlay {
+                                RoundedRectangle(cornerRadius: 4)
+                                    .stroke(selected?.id == item.id ? Ink.amber : Color.clear, lineWidth: 2)
+                            }
+                            .padding(2)
+                    }
+                    .accessibilityLabel("预览，\(item.title)")
+                    .accessibilityAddTraits(selected?.id == item.id ? .isSelected : [])
+                }
+            }
+            .padding(.horizontal, 18)
         }
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "zh_CN")
-        formatter.dateFormat = "M/d"
-        return formatter.string(from: item.createdAt)
+    }
+
+    private func emptyHome(height: CGFloat) -> some View {
+        VStack(spacing: 22) {
+            Image(systemName: "camera.aperture")
+                .font(.system(size: 58, weight: .ultraLight))
+                .foregroundStyle(Ink.amber)
+            VStack(spacing: 10) {
+                Text("让日常，留下胶片色彩")
+                    .font(.title2.weight(.semibold))
+                    .foregroundStyle(Ink.ivory)
+                Text("导入一张照片，开始你的第一件作品。")
+                    .font(.subheadline)
+                    .foregroundStyle(Ink.mute)
+            }
+            .multilineTextAlignment(.center)
+            Button { Task { await model.openSampleInEditor() } } label: {
+                Label("先试试内置色卡", systemImage: "arrow.up.right")
+                    .font(.subheadline.weight(.medium))
+                    .foregroundStyle(Ink.ivory)
+                    .frame(minHeight: 44)
+            }
+            .disabled(model.busy)
+        }
+        .padding(.horizontal, 24)
+        .frame(maxWidth: .infinity)
+        .frame(minHeight: height)
+    }
+
+    private func importPicker(iconOnly: Bool) -> some View {
+        PhotosPicker(selection: $pickerItem, matching: PhotoImport.pickerFilter,
+                     preferredItemEncoding: PhotoImport.preferredEncoding) {
+            if iconOnly {
+                Image(systemName: "plus").collectionIcon()
+            } else {
+                Label("导入照片", systemImage: "plus")
+                    .font(.headline)
+                    .foregroundStyle(Ink.void)
+                    .frame(maxWidth: .infinity, minHeight: 52)
+                    .background(Ink.amber, in: RoundedRectangle(cornerRadius: 8))
+            }
+        }
+        .disabled(model.busy)
+        .opacity(model.busy ? 0.5 : 1)
+        .accessibilityLabel("导入照片")
+    }
+
+    private func open(_ item: GalleryItem) {
+        guard !model.busy else { return }
+        Task { await model.openImport(id: item.id) }
     }
 }
 
-// MARK: - Gallery hang modes
-
+// The original presentation choices remain available from the collection's overflow menu.
 enum GalleryHangMode: String, CaseIterable, Identifiable {
-    case salon
-    case single
-    case row
-
+    case grid, salon, single, row
     var id: String { rawValue }
-
     var title: String {
         switch self {
+        case .grid: return "网格"
         case .salon: return "沙龙"
         case .single: return "单幅"
         case .row: return "联展"
         }
     }
-
     var systemImage: String {
         switch self {
+        case .grid: return "square.grid.2x2"
         case .salon: return "square.grid.3x3"
         case .single: return "rectangle.portrait"
         case .row: return "rectangle.split.2x1"
         }
     }
-
-    var accessibilityLabel: String {
-        switch self {
-        case .salon: return "沙龙多宫格墙面"
-        case .single: return "单幅观赏"
-        case .row: return "两联三联墙面"
-        }
-    }
+    var accessibilityLabel: String { "\(title)布局" }
 }
 
-private enum WallPiece: Identifiable, Hashable {
-    case sample
-    case imported(GalleryItem)
-
-    var id: String {
-        switch self {
-        case .sample: return GalleryItem.sampleID
-        case .imported(let item): return item.id
-        }
-    }
-
-    var isSample: Bool {
-        if case .sample = self { return true }
-        return false
-    }
-
-    var importItem: GalleryItem? {
-        if case .imported(let item) = self { return item }
-        return nil
-    }
-}
-
-/// Sandbox gallery of imported photos, with the built-in chart pinned first.
-/// Museum-wall hang: framed works on dark plaster, with salon / single / diptych-triptych modes.
 struct ImportGalleryView: View {
     @ObservedObject var model: LabModel
+    @ObservedObject private var gallery: ImportGalleryStore
     @Binding var pickerItem: PhotosPickerItem?
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @AppStorage("spektrafilm.gallery.hangMode") private var hangModeRaw: String = GalleryHangMode.salon.rawValue
+    @AppStorage("litefilm.gallery.obsidianLayout") private var hangModeRaw = GalleryHangMode.grid.rawValue
     @State private var editing = false
-    @State private var pendingDelete: GalleryItem?
-    @State private var focusIndex: Int = 0
+    @State private var selectedIDs: Set<String> = []
+    @State private var pendingDelete: [GalleryItem] = []
+    @State private var recentOnly = false
+    @State private var focusIndex = 0
 
-    private var hangMode: GalleryHangMode {
-        GalleryHangMode(rawValue: hangModeRaw) ?? .salon
+    init(model: LabModel, pickerItem: Binding<PhotosPickerItem?>) {
+        self.model = model
+        self.gallery = model.gallery
+        self._pickerItem = pickerItem
     }
 
-    private var pieces: [WallPiece] {
-        [.sample] + model.gallery.items.map { .imported($0) }
-    }
+    private var hangMode: GalleryHangMode { GalleryHangMode(rawValue: hangModeRaw) ?? .grid }
+    private var items: [GalleryItem] { recentOnly ? gallery.recent(limit: 12) : gallery.items }
 
     var body: some View {
         GeometryReader { geo in
-            let landscape = geo.size.width > geo.size.height + 24
+            let landscape = geo.size.width > geo.size.height
             VStack(spacing: 0) {
-                topBar(landscape: landscape)
-                modeBar
-                wallContent(size: geo.size, landscape: landscape)
+                CollectionHeader(title: "全部作品") {
+                    Button { model.openHome() } label: {
+                        Image(systemName: "chevron.left").collectionIcon()
+                    }
+                    .disabled(model.busy)
+                    .accessibilityLabel("返回首页")
+                } trailing: {
+                    Button(editing ? "完成" : "选择") {
+                        editing.toggle()
+                        selectedIDs.removeAll()
+                    }
+                    .font(.subheadline.weight(.medium))
+                    .foregroundStyle(editing ? Ink.amber : Ink.ivory)
+                    .frame(minWidth: 44, minHeight: 44)
+                    .disabled(gallery.items.isEmpty || model.busy)
+                }
+                collectionToolbar
+                CollectionStatus(model: model)
+                if items.isEmpty {
+                    emptyGallery
+                } else if hangMode == .single {
+                    singleContent(height: max(120, geo.size.height - 250))
+                } else {
+                    gridContent(landscape: landscape)
+                }
+                bottomBar
             }
-            .frame(width: geo.size.width, height: geo.size.height)
-            .background {
-                GalleryWallBackground()
-                    .ignoresSafeArea()
-            }
+            .background(Ink.void.ignoresSafeArea())
         }
-        .confirmationDialog(
-            "删除这张导入？",
-            isPresented: Binding(
-                get: { pendingDelete != nil },
-                set: { if !$0 { pendingDelete = nil } }
-            ),
-            titleVisibility: .visible
-        ) {
+        .buttonStyle(.plain)
+        .confirmationDialog(deleteTitle, isPresented: Binding(
+            get: { !pendingDelete.isEmpty },
+            set: { if !$0 { pendingDelete = [] } }
+        ), titleVisibility: .visible) {
             Button("删除", role: .destructive) {
-                if let item = pendingDelete {
-                    Task { await model.deleteImport(id: item.id) }
+                let deleting = pendingDelete
+                pendingDelete = []
+                Task {
+                    for item in deleting { await model.deleteImport(id: item.id) }
+                    selectedIDs.subtract(deleting.map(\.id))
                 }
-                pendingDelete = nil
             }
-            Button("取消", role: .cancel) { pendingDelete = nil }
-        } message: {
-            Text("只会从LiteFilm画廊里移除，不会改你的系统相册。")
-        }
-        .onChange(of: pieces.count) { _, _ in
-            if focusIndex >= pieces.count {
-                focusIndex = max(0, pieces.count - 1)
-            }
-        }
-        .onChange(of: hangModeRaw) { _, _ in
-            clampFocus()
-        }
-    }
-
-    // MARK: Chrome
-
-    private func topBar(landscape: Bool) -> some View {
-        HStack(spacing: 8) {
-            Button {
-                model.openHome()
-            } label: {
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(GalleryInk.ink)
-                    .frame(width: 36, height: 36)
-                    .background(Color.black.opacity(0.04), in: Circle())
-                    .overlay(Circle().stroke(GalleryInk.stroke, lineWidth: 1))
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("返回首页")
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text("画廊")
-                    .font(.system(size: 17, weight: .medium, design: .serif))
-                    .foregroundStyle(GalleryInk.ink)
-                Text(landscape ? "横屏 · 白色展墙" : "白色墙面上的作品")
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundStyle(GalleryInk.mute)
-            }
-
-            Spacer(minLength: 6)
-
-            Button(editing ? "完成" : "整理") {
-                withModeAnimation { editing.toggle() }
-            }
-            .font(.caption.weight(.medium))
-            .foregroundStyle(editing ? Ink.amber : GalleryInk.mute)
-            .frame(minWidth: 44, minHeight: 36)
-
-            PhotosPicker(selection: $pickerItem, matching: PhotoImport.pickerFilter, preferredItemEncoding: PhotoImport.preferredEncoding) {
-                Image(systemName: "plus")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(GalleryInk.ink)
-                    .frame(width: 36, height: 36)
-                    .background(Color.black.opacity(0.04), in: Circle())
-                    .overlay(Circle().stroke(GalleryInk.stroke, lineWidth: 1))
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("导入照片")
             .disabled(model.busy)
+            Button("取消", role: .cancel) { pendingDelete = [] }
+        } message: {
+            Text("只从 LiteFilm 移除所选作品，不会改动系统相册。其他独立保存的方案会保留。")
         }
-        .padding(.horizontal, 12)
-        .padding(.top, 6)
-        .padding(.bottom, 4)
-    }
-
-    private var modeBar: some View {
-        HStack(spacing: 6) {
-            ForEach(GalleryHangMode.allCases) { mode in
-                Button {
-                    setHangMode(mode)
-                } label: {
-                    HStack(spacing: 5) {
-                        Image(systemName: mode.systemImage)
-                            .font(.system(size: 11, weight: .semibold))
-                        Text(mode.title)
-                            .font(.system(size: 12, weight: .semibold))
-                    }
-                    .foregroundStyle(hangMode == mode ? Color(red: 0.12, green: 0.09, blue: 0.06) : GalleryInk.mute)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 7)
-                    .background(
-                        Capsule().fill(hangMode == mode ? Ink.amber : Color.black.opacity(0.04))
-                    )
-                    .overlay(
-                        Capsule().stroke(hangMode == mode ? Color.clear : GalleryInk.stroke, lineWidth: 1)
-                    )
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel(mode.accessibilityLabel)
-                .accessibilityAddTraits(hangMode == mode ? .isSelected : [])
-            }
-            Spacer(minLength: 0)
-            Text("\(max(0, pieces.count - 1)) 幅导入")
-                .font(.caption2)
-                .foregroundStyle(GalleryInk.mute)
+        .onChange(of: gallery.items) { _, values in
+            selectedIDs.formIntersection(Set(values.map(\.id)))
+            focusIndex = min(focusIndex, max(0, items.count - 1))
+            if values.isEmpty { editing = false }
         }
-        .padding(.horizontal, 12)
-        .padding(.bottom, 8)
-    }
-
-    @ViewBuilder
-    private func wallContent(size: CGSize, landscape: Bool) -> some View {
-        switch hangMode {
-        case .salon:
-            salonWall(size: size, landscape: landscape)
-        case .single:
-            singleWall(size: size, landscape: landscape)
-        case .row:
-            rowWall(size: size, landscape: landscape)
+        .onChange(of: recentOnly) { _, _ in
+            focusIndex = 0
+            selectedIDs.removeAll()
         }
     }
 
-    // MARK: Salon (multi grid)
-
-    private func salonWall(size: CGSize, landscape: Bool) -> some View {
-        let columnsCount = landscape ? 4 : 3
-        let spacing: CGFloat = landscape ? 18 : 14
-        let hPad: CGFloat = landscape ? 22 : 16
-        let columns = Array(repeating: GridItem(.flexible(), spacing: spacing), count: columnsCount)
-
-        return ScrollView {
-            VStack(spacing: 0) {
-                hangingRail
-                    .padding(.horizontal, hPad)
-                    .padding(.bottom, 14)
-                LazyVGrid(columns: columns, spacing: spacing + 6) {
-                    ForEach(Array(pieces.enumerated()), id: \.element.id) { index, piece in
-                        wallCell(piece, index: index, matInset: 7, framePad: 5, shadow: 8)
-                    }
-                }
-                .padding(.horizontal, hPad)
-                .padding(.bottom, 28)
-
-                if model.gallery.items.isEmpty {
-                    emptyHint
-                }
-            }
-            .padding(.top, 4)
+    private var deleteTitle: String {
+        if pendingDelete.count == 1 {
+            return pendingDelete.first?.isVariant == true ? "删除这个保存方案？" : "删除这张导入照片？"
         }
+        return "删除选中的 \(pendingDelete.count) 件作品？"
     }
 
-    // MARK: Row (diptych / triptych)
-
-    private func rowWall(size: CGSize, landscape: Bool) -> some View {
-        let columnsCount = landscape ? 3 : 2
-        let spacing: CGFloat = landscape ? 28 : 22
-        let hPad: CGFloat = landscape ? 28 : 20
-        let columns = Array(repeating: GridItem(.flexible(), spacing: spacing), count: columnsCount)
-
-        return ScrollView {
-            VStack(spacing: 0) {
-                hangingRail
-                    .padding(.horizontal, hPad)
-                    .padding(.bottom, 18)
-                LazyVGrid(columns: columns, spacing: spacing + 10) {
-                    ForEach(Array(pieces.enumerated()), id: \.element.id) { index, piece in
-                        wallCell(piece, index: index, matInset: 10, framePad: 7, shadow: 12)
-                    }
-                }
-                .padding(.horizontal, hPad)
-                .padding(.bottom, 32)
-
-                if model.gallery.items.isEmpty {
-                    emptyHint
-                }
-            }
-            .padding(.top, 6)
-        }
-    }
-
-    // MARK: Single (one large work)
-
-    private func singleWall(size: CGSize, landscape: Bool) -> some View {
-        let safePieces = pieces
-        let index = min(max(0, focusIndex), max(0, safePieces.count - 1))
-        let piece = safePieces.isEmpty ? WallPiece.sample : safePieces[index]
-        let maxArtWidth = landscape ? min(size.width * 0.62, size.height * 1.15) : min(size.width - 48, size.height * 0.62)
-        let maxArtHeight = landscape ? size.height - 120 : size.height * 0.58
-
-        return VStack(spacing: 0) {
-            hangingRail
-                .padding(.horizontal, landscape ? 36 : 24)
-                .padding(.top, 4)
-                .padding(.bottom, 12)
-
-            Spacer(minLength: 4)
-
-            ZStack(alignment: .topTrailing) {
-                Button {
-                    openPiece(piece)
-                } label: {
-                    FramedWallArt(
-                        image: image(for: piece),
-                        plaque: plaque(for: piece),
-                        matInset: landscape ? 14 : 12,
-                        framePad: landscape ? 10 : 8,
-                        shadowRadius: 18,
-                        corner: 3,
-                        lockPortraitAspect: false,
-                        contentAspect: imageAspect(for: piece)
-                    )
-                    .frame(maxWidth: maxArtWidth, maxHeight: maxArtHeight)
-                }
-                .buttonStyle(.plain)
-                .disabled(editing && piece.isSample)
-                .accessibilityLabel(piece.isSample ? "打开内置色卡" : "打开导入照片")
-                .contextMenu {
-                    if let item = piece.importItem {
-                        Button("打开编辑") {
-                            Task { await model.openImport(id: item.id) }
-                        }
-                        Button("删除", role: .destructive) {
-                            pendingDelete = item
-                        }
-                    } else {
-                        Button("打开色卡编辑") {
-                            Task { await model.openSampleInEditor() }
-                        }
-                    }
-                }
-
-                if editing, let item = piece.importItem {
-                    Button {
-                        pendingDelete = item
-                    } label: {
-                        Image(systemName: "minus.circle.fill")
-                            .symbolRenderingMode(.palette)
-                            .foregroundStyle(.white, Ink.ember)
-                            .font(.system(size: 26))
-                            .padding(10)
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-            .gesture(
-                DragGesture(minimumDistance: 40)
-                    .onEnded { value in
-                        guard !editing else { return }
-                        let dx = value.translation.width
-                        if dx < -50 {
-                            stepFocus(+1)
-                        } else if dx > 50 {
-                            stepFocus(-1)
-                        }
-                    }
-            )
-
+    private var collectionToolbar: some View {
+        HStack(spacing: 24) {
+            filterTab("全部", recent: false)
+            filterTab("最近", recent: true)
             Spacer(minLength: 8)
-
-            singleNav(index: index, total: safePieces.count)
-                .padding(.bottom, landscape ? 12 : 18)
+            PhotosPicker(selection: $pickerItem, matching: PhotoImport.pickerFilter,
+                         preferredItemEncoding: PhotoImport.preferredEncoding) {
+                Image(systemName: "plus").collectionIcon()
+            }
+            .disabled(model.busy)
+            .accessibilityLabel("导入照片")
         }
-        .padding(.horizontal, landscape ? 20 : 12)
+        .padding(.horizontal, 20)
+        .overlay(alignment: .bottom) { Rectangle().fill(Ink.hairline).frame(height: 1).padding(.horizontal, 20) }
     }
 
-    private func singleNav(index: Int, total: Int) -> some View {
-        HStack(spacing: 18) {
-            Button {
-                stepFocus(-1)
-            } label: {
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(index <= 0 ? GalleryInk.mute.opacity(0.35) : GalleryInk.ink)
-                    .frame(width: 40, height: 40)
-                    .background(Color.black.opacity(0.04), in: Circle())
-                    .overlay(Circle().stroke(GalleryInk.stroke, lineWidth: 1))
-            }
-            .buttonStyle(.plain)
-            .disabled(index <= 0)
-            .accessibilityLabel("上一幅")
-
-            VStack(spacing: 4) {
-                Text(plaque(for: pieces[safe: index] ?? .sample))
-                    .font(.system(size: 14, weight: .medium, design: .serif))
-                    .foregroundStyle(GalleryInk.ink)
-                Text("\(index + 1) / \(max(total, 1))")
-                    .font(.caption2)
-                    .foregroundStyle(GalleryInk.mute)
-                Text("左右滑动切换作品")
-                    .font(.system(size: 10))
-                    .foregroundStyle(GalleryInk.mute.opacity(0.8))
-            }
-            .frame(minWidth: 120)
-
-            Button {
-                stepFocus(+1)
-            } label: {
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(index >= total - 1 ? GalleryInk.mute.opacity(0.35) : GalleryInk.ink)
-                    .frame(width: 40, height: 40)
-                    .background(Color.black.opacity(0.04), in: Circle())
-                    .overlay(Circle().stroke(GalleryInk.stroke, lineWidth: 1))
-            }
-            .buttonStyle(.plain)
-            .disabled(index >= total - 1)
-            .accessibilityLabel("下一幅")
-        }
-    }
-
-    // MARK: Cells
-
-    private func wallCell(
-        _ piece: WallPiece,
-        index: Int,
-        matInset: CGFloat,
-        framePad: CGFloat,
-        shadow: CGFloat
-    ) -> some View {
-        ZStack(alignment: .topTrailing) {
-            Button {
-                if editing {
-                    if let item = piece.importItem {
-                        pendingDelete = item
-                    }
-                } else {
-                    openPiece(piece)
-                    focusIndex = index
-                }
-            } label: {
-                FramedWallArt(
-                    image: image(for: piece),
-                    plaque: plaque(for: piece),
-                    matInset: matInset,
-                    framePad: framePad,
-                    shadowRadius: shadow,
-                    corner: 2,
-                    lockPortraitAspect: true
-                )
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel(piece.isSample ? "打开内置色卡" : "打开导入照片")
-            .contextMenu {
-                if let item = piece.importItem {
-                    Button("打开编辑") {
-                        Task { await model.openImport(id: item.id) }
-                    }
-                    Button("删除", role: .destructive) {
-                        pendingDelete = item
-                    }
-                } else {
-                    Button("打开色卡编辑") {
-                        Task { await model.openSampleInEditor() }
+    private func filterTab(_ title: String, recent: Bool) -> some View {
+        Button { recentOnly = recent } label: {
+            Text(title)
+                .font(.headline)
+                .foregroundStyle(recentOnly == recent ? Ink.ivory : Ink.mute)
+                .frame(minWidth: 44, minHeight: 48)
+                .overlay(alignment: .bottom) {
+                    if recentOnly == recent {
+                        Capsule().fill(Ink.amber).frame(height: 3).padding(.bottom, 1)
                     }
                 }
-            }
+        }
+        .accessibilityAddTraits(recentOnly == recent ? .isSelected : [])
+        .accessibilityHint(recent ? "显示最近十二件作品" : "显示全部作品")
+    }
 
-            if editing, piece.importItem != nil {
-                Image(systemName: "minus.circle.fill")
-                    .symbolRenderingMode(.palette)
-                    .foregroundStyle(.white, Ink.ember)
-                    .font(.system(size: 22))
-                    .padding(6)
-                    .allowsHitTesting(false)
+    private func gridContent(landscape: Bool) -> some View {
+        let count: Int
+        switch hangMode {
+        case .salon: count = landscape ? 4 : 3
+        case .row: count = landscape ? 3 : 2
+        default: count = landscape ? 4 : 2
+        }
+        let spacing: CGFloat = hangMode == .row ? 22 : 12
+        return ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                Text(recentOnly ? "最近 \(items.count) 件" : "\(items.count) 件作品")
+                    .font(.subheadline)
+                    .foregroundStyle(Ink.mute)
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: spacing), count: count), spacing: 20) {
+                    ForEach(items) { item in
+                        itemCell(item, imageAspect: hangMode == .row ? 1 : 0.84)
+                    }
+                }
+                sampleButton.padding(.top, 8)
+            }
+            .padding(20)
+        }
+    }
+
+    private func itemCell(_ item: GalleryItem, imageAspect: CGFloat) -> some View {
+        Button { activate(item) } label: {
+            VStack(alignment: .leading, spacing: 8) {
+                CollectionPhoto(url: gallery.thumbURL(for: item), fallback: item.isVariant ? nil : gallery.originalURL(for: item))
+                    .aspectRatio(imageAspect, contentMode: .fit)
+                    .clipShape(RoundedRectangle(cornerRadius: 4))
+                    .overlay(alignment: .topTrailing) {
+                        if editing {
+                            Image(systemName: selectedIDs.contains(item.id) ? "checkmark.circle.fill" : "circle")
+                                .font(.title2)
+                                .symbolRenderingMode(.palette)
+                                .foregroundStyle(selectedIDs.contains(item.id) ? Ink.void : Ink.ivory, Ink.amber)
+                                .padding(10)
+                                .background(.black.opacity(0.3), in: Circle())
+                                .padding(4)
+                        }
+                    }
+                    .overlay {
+                        if selectedIDs.contains(item.id) {
+                            RoundedRectangle(cornerRadius: 4).stroke(Ink.amber, lineWidth: 2)
+                        }
+                    }
+                Text(item.title)
+                    .font(.subheadline.weight(.medium))
+                    .foregroundStyle(Ink.ivory)
+                    .lineLimit(2)
+                if item.isVariant {
+                    Text("保存方案").font(.caption).foregroundStyle(Ink.mute)
+                }
+            }
+            .contentShape(Rectangle())
+        }
+        .disabled(model.busy)
+        .accessibilityLabel("\(item.title)\(item.isVariant ? "，保存方案" : "")")
+        .accessibilityHint(editing ? "选择或取消选择" : "打开编辑")
+        .accessibilityAddTraits(selectedIDs.contains(item.id) ? .isSelected : [])
+        .contextMenu {
+            Button("打开编辑") {
+                guard !model.busy else { return }
+                Task { await model.openImport(id: item.id) }
+            }
+            .disabled(model.busy)
+            Button("删除", role: .destructive) { pendingDelete = [item] }
+                .disabled(model.busy)
+        }
+    }
+
+    private func singleContent(height: CGFloat) -> some View {
+        let index = min(focusIndex, max(0, items.count - 1))
+        return ScrollView {
+            if items.indices.contains(index) {
+                let item = items[index]
+                VStack(spacing: 16) {
+                    Button { activate(item) } label: {
+                        CollectionPhoto(
+                            url: item.isVariant ? gallery.thumbURL(for: item) : gallery.originalURL(for: item),
+                            fallback: item.isVariant ? nil : gallery.thumbURL(for: item), fit: true
+                        )
+                            .frame(height: height)
+                            .contentShape(Rectangle())
+                            .overlay(alignment: .topTrailing) {
+                                if editing {
+                                    Image(systemName: selectedIDs.contains(item.id) ? "checkmark.circle.fill" : "circle")
+                                        .font(.title).foregroundStyle(Ink.amber).padding(16)
+                                }
+                            }
+                    }
+                    .disabled(model.busy)
+                    .accessibilityLabel(item.title)
+                    Text(item.title).font(.headline).foregroundStyle(Ink.ivory)
+                    HStack(spacing: 24) {
+                        Button { focusIndex = max(0, index - 1) } label: {
+                            Image(systemName: "chevron.left").collectionIcon()
+                        }
+                        .disabled(index == 0).opacity(index == 0 ? 0.35 : 1).accessibilityLabel("上一幅")
+                        Text("\(index + 1) / \(items.count)").font(.subheadline.monospacedDigit()).foregroundStyle(Ink.mute)
+                        Button { focusIndex = min(items.count - 1, index + 1) } label: {
+                            Image(systemName: "chevron.right").collectionIcon()
+                        }
+                        .disabled(index == items.count - 1).opacity(index == items.count - 1 ? 0.35 : 1).accessibilityLabel("下一幅")
+                    }
+                    sampleButton
+                }
+                .padding(.vertical, 16)
             }
         }
     }
 
-    private var hangingRail: some View {
-        VStack(spacing: 0) {
-            Capsule()
-                .fill(
-                    LinearGradient(
-                        colors: [
-                            Color(red: 0.42, green: 0.34, blue: 0.24),
-                            Ink.amber.opacity(0.85),
-                            Color(red: 0.42, green: 0.34, blue: 0.24),
-                        ],
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
-                )
-                .frame(height: 3)
-                .shadow(color: .black.opacity(0.45), radius: 3, y: 2)
-            HStack {
-                railHook
-                Spacer()
-                railHook
-                Spacer()
-                railHook
+    private var bottomBar: some View {
+        HStack(spacing: 16) {
+            Menu {
+                Picker("作品布局", selection: $hangModeRaw) {
+                    ForEach(GalleryHangMode.allCases) { mode in
+                        Label(mode.title, systemImage: mode.systemImage).tag(mode.rawValue)
+                    }
+                }
+                Button("打开内置色卡", systemImage: "camera.filters") {
+                    Task { await model.openSampleInEditor() }
+                }
+            } label: {
+                Image(systemName: hangMode.systemImage).collectionIcon(color: Ink.amber)
             }
-            .padding(.horizontal, 28)
-            .offset(y: -1)
+            .disabled(model.busy)
+            .accessibilityLabel("作品布局与内置色卡")
+            Rectangle().fill(Ink.hairline).frame(width: 1, height: 22)
+            if editing {
+                Button(selectedIDs.count == items.count ? "取消全选" : "全选") {
+                    if selectedIDs.count == items.count { selectedIDs.removeAll() }
+                    else { selectedIDs = Set(items.map(\.id)) }
+                }
+                .font(.subheadline).frame(minHeight: 44)
+                Spacer(minLength: 0)
+                Button("删除（\(selectedIDs.count)）", role: .destructive) {
+                    pendingDelete = gallery.items.filter { selectedIDs.contains($0.id) }
+                }
+                .font(.subheadline.weight(.semibold)).foregroundStyle(Ink.ember)
+                .frame(minHeight: 44)
+                .disabled(selectedIDs.isEmpty || model.busy)
+            } else {
+                Text("点按照片继续编辑")
+                    .font(.subheadline)
+                    .foregroundStyle(Ink.mute)
+                    .frame(maxWidth: .infinity)
+            }
         }
-        .accessibilityHidden(true)
+        .foregroundStyle(Ink.ivory)
+        .padding(.horizontal, 20)
+        .padding(.vertical, 8)
+        .background(Ink.void)
+        .overlay(alignment: .top) { Rectangle().fill(Ink.hairline).frame(height: 1) }
     }
 
-    private var railHook: some View {
-        Capsule()
-            .fill(Color(red: 0.55, green: 0.45, blue: 0.32).opacity(0.7))
-            .frame(width: 8, height: 10)
-    }
-
-    private var emptyHint: some View {
-        Text("还没有导入过照片。点右上角加号，或回首页点色卡。")
-            .font(.caption)
-            .foregroundStyle(GalleryInk.mute)
-            .multilineTextAlignment(.center)
-            .padding(.horizontal, 28)
-            .padding(.top, 12)
-            .padding(.bottom, 8)
-    }
-
-    // MARK: Actions / helpers
-
-    private func setHangMode(_ mode: GalleryHangMode) {
-        guard mode.rawValue != hangModeRaw else { return }
-        withModeAnimation {
-            hangModeRaw = mode.rawValue
+    private var emptyGallery: some View {
+        ScrollView {
+            VStack(spacing: 18) {
+                Image(systemName: "photo.on.rectangle.angled")
+                    .font(.system(size: 48, weight: .ultraLight)).foregroundStyle(Ink.amber)
+                Text("你的作品，从这里开始").font(.title3.weight(.semibold)).foregroundStyle(Ink.ivory)
+                Text("点右上角 ＋ 导入照片\n照片和保存方案都会保留在这里。")
+                    .font(.subheadline).foregroundStyle(Ink.mute).multilineTextAlignment(.center)
+                sampleButton
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.horizontal, 24)
+            .padding(.vertical, 60)
         }
     }
 
-    private func withModeAnimation(_ updates: () -> Void) {
-        if reduceMotion {
-            updates()
+    private var sampleButton: some View {
+        Button { Task { await model.openSampleInEditor() } } label: {
+            Label("试试内置色卡", systemImage: "camera.filters")
+                .font(.subheadline.weight(.medium)).foregroundStyle(Ink.mute)
+                .frame(maxWidth: .infinity, minHeight: 44)
+        }
+        .disabled(model.busy)
+    }
+
+    private func activate(_ item: GalleryItem) {
+        guard !model.busy else { return }
+        if editing {
+            if selectedIDs.contains(item.id) { selectedIDs.remove(item.id) }
+            else { selectedIDs.insert(item.id) }
         } else {
-            withAnimation(.easeInOut(duration: 0.28)) {
-                updates()
-            }
-        }
-    }
-
-    private func stepFocus(_ delta: Int) {
-        let next = focusIndex + delta
-        guard next >= 0, next < pieces.count else { return }
-        withModeAnimation {
-            focusIndex = next
-        }
-    }
-
-    private func clampFocus() {
-        if focusIndex >= pieces.count {
-            focusIndex = max(0, pieces.count - 1)
-        }
-    }
-
-    private func openPiece(_ piece: WallPiece) {
-        guard !editing else { return }
-        switch piece {
-        case .sample:
-            Task { await model.openSampleInEditor() }
-        case .imported(let item):
             Task { await model.openImport(id: item.id) }
         }
     }
+}
 
-    private func image(for piece: WallPiece) -> UIImage? {
-        switch piece {
-        case .sample:
-            return model.preview ?? bundleSampleImage()
-        case .imported(let item):
-            return model.gallery.loadThumb(for: item)
-        }
+// MARK: - Shared collection chrome and bounded, off-main-thread image loading
+
+private struct CollectionHeader<Leading: View, Trailing: View>: View {
+    var title: String
+    var brand = false
+    @ViewBuilder var leading: () -> Leading
+    @ViewBuilder var trailing: () -> Trailing
+
+    var body: some View {
+        ObsidianHeader(title: title, brand: brand, leading: leading, trailing: trailing)
     }
+}
 
-    private func plaque(for piece: WallPiece) -> String {
-        switch piece {
-        case .sample:
-            return "内置色卡"
-        case .imported(let item):
-            if item.isVariant {
-                let head = item.title.split(separator: "·").first.map(String.init)?.trimmingCharacters(in: .whitespaces)
-                return head?.isEmpty == false ? (head ?? "方案") : "方案"
+private extension Image {
+    func collectionIcon(color: Color = Ink.ivory) -> some View {
+        self.font(.system(size: 21, weight: .regular))
+            .foregroundStyle(color)
+            .frame(width: 44, height: 44)
+            .contentShape(Rectangle())
+    }
+}
+
+private struct CollectionStatus: View {
+    @ObservedObject var model: LabModel
+    var body: some View {
+        if let error = model.errorText {
+            HStack(alignment: .top, spacing: 10) {
+                Image(systemName: "exclamationmark.circle")
+                Text(error).font(.subheadline).frame(maxWidth: .infinity, alignment: .leading)
+                Button { model.errorText = nil } label: {
+                    Image(systemName: "xmark").frame(width: 44, height: 44)
+                }
+                .accessibilityLabel("关闭错误提示")
             }
-            return shortDate(item.createdAt)
+            .foregroundStyle(Ink.ember)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 8)
+            .accessibilityElement(children: .contain)
+        } else if model.busy {
+            HStack(spacing: 10) {
+                ProgressView().tint(Ink.amber)
+                Text(model.status).font(.subheadline).foregroundStyle(Ink.mute)
+            }
+            .padding(12)
         }
     }
-
-    private func imageAspect(for piece: WallPiece) -> CGFloat {
-        guard let image = image(for: piece), image.size.height > 1 else { return 0.8 }
-        return image.size.width / image.size.height
-    }
-
-    private func shortDate(_ date: Date) -> String {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: "zh_CN")
-        formatter.dateFormat = "M/d"
-        return formatter.string(from: date)
-    }
-
-    private func bundleSampleImage() -> UIImage? {
-        guard let url = Bundle.main.url(forResource: "SampleBars", withExtension: "png"),
-              let data = try? Data(contentsOf: url)
-        else { return nil }
-        return UIImage(data: data)
-    }
 }
 
-// MARK: - Wall visuals
+private struct CollectionPhoto: View {
+    let url: URL
+    var fallback: URL? = nil
+    var fit = false
+    @State private var image: UIImage?
+    @State private var finished = false
 
-/// Light museum wall chrome (not app Ink.void). Default gallery is white plaster.
-private enum GalleryInk {
-    static let ink = Color(red: 0.18, green: 0.15, blue: 0.12)
-    static let mute = Color(red: 0.48, green: 0.44, blue: 0.38)
-    static let stroke = Color.black.opacity(0.10)
-}
-
-private struct GalleryWallBackground: View {
     var body: some View {
         GeometryReader { geo in
-            let w = geo.size.width
-            let h = geo.size.height
             ZStack {
-                // Museum white plaster
-                LinearGradient(
-                    colors: [
-                        Color(red: 0.97, green: 0.96, blue: 0.94),
-                        Color(red: 0.94, green: 0.93, blue: 0.90),
-                        Color(red: 0.91, green: 0.90, blue: 0.87),
-                    ],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-
-                // Ceiling track wash (soft warm light from above)
-                LinearGradient(
-                    colors: [
-                        Color(red: 1.0, green: 0.97, blue: 0.90).opacity(0.55),
-                        Color.clear,
-                    ],
-                    startPoint: .top,
-                    endPoint: .center
-                )
-
-                // Left track spot
-                RadialGradient(
-                    colors: [
-                        Color(red: 1.0, green: 0.96, blue: 0.88).opacity(0.38),
-                        Color.clear,
-                    ],
-                    center: UnitPoint(x: 0.22, y: 0.08),
-                    startRadius: 10,
-                    endRadius: min(w, h) * 0.55
-                )
-
-                // Right track spot
-                RadialGradient(
-                    colors: [
-                        Color(red: 1.0, green: 0.97, blue: 0.90).opacity(0.32),
-                        Color.clear,
-                    ],
-                    center: UnitPoint(x: 0.78, y: 0.10),
-                    startRadius: 8,
-                    endRadius: min(w, h) * 0.50
-                )
-
-                // Center pool on the hang
-                RadialGradient(
-                    colors: [
-                        Color.white.opacity(0.35),
-                        Color.clear,
-                    ],
-                    center: UnitPoint(x: 0.5, y: 0.42),
-                    startRadius: 20,
-                    endRadius: min(w, h) * 0.62
-                )
-
-                // Soft edge vignette (gallery room corners)
-                RadialGradient(
-                    colors: [
-                        Color.clear,
-                        Color(red: 0.72, green: 0.70, blue: 0.66).opacity(0.22),
-                    ],
-                    center: .center,
-                    startRadius: min(w, h) * 0.35,
-                    endRadius: max(w, h) * 0.78
-                )
-
-                // Floor baseboard wash
-                VStack {
-                    Spacer()
-                    LinearGradient(
-                        colors: [
-                            Color.clear,
-                            Color(red: 0.78, green: 0.74, blue: 0.68).opacity(0.35),
-                            Color(red: 0.62, green: 0.58, blue: 0.52).opacity(0.45),
-                        ],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                    .frame(height: min(140, h * 0.18))
+                Ink.surface
+                if let image {
+                    Image(uiImage: image).resizable()
+                        .aspectRatio(contentMode: fit ? .fit : .fill)
+                        .frame(width: geo.size.width, height: geo.size.height)
+                        .clipped()
+                } else if finished {
+                    Image(systemName: "photo").foregroundStyle(Ink.mute).font(.title2)
+                        .accessibilityLabel("暂时无法加载缩略图")
+                } else {
+                    ProgressView().tint(Ink.mute)
                 }
             }
+        }
+        .task(id: url) {
+            image = nil
+            finished = false
+            let loaded = await CollectionThumbnailLoader.shared.load(url: url, fallback: fallback)
+            guard !Task.isCancelled else { return }
+            image = loaded
+            finished = true
         }
     }
 }
 
-private struct FramedWallArt: View {
-    let image: UIImage?
-    let plaque: String
-    var matInset: CGFloat = 8
-    var framePad: CGFloat = 6
-    var shadowRadius: CGFloat = 10
-    var corner: CGFloat = 2
-    /// Salon / row cells keep a shared portrait frame so the wall reads as a hang.
-    var lockPortraitAspect: Bool = true
-    var contentAspect: CGFloat = 0.82
+/// Serial actor limits decoding concurrency to one; the cost-bounded cache holds thumbnails only.
+private actor CollectionThumbnailLoader {
+    static let shared = CollectionThumbnailLoader()
+    private let cache: NSCache<NSURL, UIImage> = {
+        let cache = NSCache<NSURL, UIImage>()
+        cache.totalCostLimit = 32 * 1024 * 1024
+        cache.countLimit = 60
+        return cache
+    }()
 
-    private let wood = Color(red: 0.16, green: 0.13, blue: 0.10)
-    private let woodEdge = Color(red: 0.32, green: 0.26, blue: 0.20)
-    private let mat = Color(red: 0.96, green: 0.94, blue: 0.90)
-
-    private var frameAspect: CGFloat {
-        if lockPortraitAspect { return 0.82 }
-        return min(1.45, max(0.62, contentAspect))
-    }
-
-    var body: some View {
-        VStack(spacing: 8) {
-            ZStack {
-                // Soft wall shadow under the hang
-                RoundedRectangle(cornerRadius: corner + 2, style: .continuous)
-                    .fill(Color.black.opacity(0.18))
-                    .offset(y: max(4, shadowRadius * 0.42))
-                    .blur(radius: shadowRadius * 0.55)
-
-                RoundedRectangle(cornerRadius: corner + 1, style: .continuous)
-                    .fill(
-                        LinearGradient(
-                            colors: [woodEdge.opacity(0.95), wood, woodEdge.opacity(0.8)],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: corner + 1, style: .continuous)
-                            .stroke(Color.white.opacity(0.22), lineWidth: 0.8)
-                    )
-
-                RoundedRectangle(cornerRadius: 1, style: .continuous)
-                    .fill(mat)
-                    .padding(framePad)
-                    .overlay {
-                        RoundedRectangle(cornerRadius: 1, style: .continuous)
-                            .stroke(Color.black.opacity(0.10), lineWidth: 0.6)
-                            .padding(framePad)
-                    }
-
-                Group {
-                    if let image {
-                        Image(uiImage: image)
-                            .resizable()
-                            .scaledToFill()
-                    } else {
-                        ZStack {
-                            Color(red: 0.90, green: 0.88, blue: 0.84)
-                            Image(systemName: "photo")
-                                .foregroundStyle(GalleryInk.mute)
-                        }
-                    }
-                }
-                .padding(framePad + matInset)
-                .clipShape(Rectangle())
-
-                // Glass catchlight — thin specular along top edge of the art glass
-                RoundedRectangle(cornerRadius: corner + 1, style: .continuous)
-                    .stroke(
-                        LinearGradient(
-                            colors: [
-                                Color.white.opacity(0.55),
-                                Color.white.opacity(0.08),
-                                Color.clear,
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        ),
-                        lineWidth: 1.1
-                    )
-                    .padding(0.5)
-                    .allowsHitTesting(false)
-
-                // Soft warm spot pooled on the glass
-                RoundedRectangle(cornerRadius: corner + 1, style: .continuous)
-                    .fill(
-                        RadialGradient(
-                            colors: [
-                                Color(red: 1.0, green: 0.98, blue: 0.92).opacity(0.16),
-                                Color.clear,
-                            ],
-                            center: UnitPoint(x: 0.35, y: 0.18),
-                            startRadius: 2,
-                            endRadius: 90
-                        )
-                    )
-                    .allowsHitTesting(false)
-            }
-            .aspectRatio(frameAspect, contentMode: .fit)
-
-            Text(plaque)
-                .font(.system(size: 10, weight: .medium, design: .serif))
-                .foregroundStyle(GalleryInk.mute)
-                .padding(.horizontal, 8)
-                .padding(.vertical, 3)
-                .background(
-                    RoundedRectangle(cornerRadius: 2, style: .continuous)
-                        .fill(Color.white.opacity(0.72))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 2, style: .continuous)
-                                .stroke(GalleryInk.stroke, lineWidth: 0.5)
-                        )
-                        .shadow(color: Color.black.opacity(0.06), radius: 2, y: 1)
-                )
+    func load(url: URL, fallback: URL?) -> UIImage? {
+        if let cached = cache.object(forKey: url as NSURL) { return cached }
+        for sourceURL in [url, fallback].compactMap({ $0 }) {
+            guard let source = CGImageSourceCreateWithURL(sourceURL as CFURL,
+                [kCGImageSourceShouldCache: false] as CFDictionary),
+                  let cgImage = CGImageSourceCreateThumbnailAtIndex(source, 0, [
+                    kCGImageSourceCreateThumbnailFromImageAlways: true,
+                    kCGImageSourceCreateThumbnailWithTransform: true,
+                    kCGImageSourceThumbnailMaxPixelSize: 1200,
+                    kCGImageSourceShouldCacheImmediately: true,
+                  ] as CFDictionary)
+            else { continue }
+            let image = UIImage(cgImage: cgImage)
+            cache.setObject(image, forKey: url as NSURL, cost: cgImage.bytesPerRow * cgImage.height)
+            return image
         }
-    }
-}
-
-private extension Array {
-    subscript(safe index: Int) -> Element? {
-        guard indices.contains(index) else { return nil }
-        return self[index]
+        return nil
     }
 }

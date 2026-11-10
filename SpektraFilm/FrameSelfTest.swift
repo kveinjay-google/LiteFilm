@@ -49,6 +49,7 @@ enum FrameSelfTest {
         }
         do {
             let catalog = try FrameCatalog.load()
+            try checkWatermarkIdentityAndSelection()
             try checkCatalog(catalog)
             try checkLayouts(catalog)
             try checkPixels(catalog)
@@ -62,6 +63,46 @@ enum FrameSelfTest {
         }
         logLine(failed ? "SPEKTRAFILM_FRAME_SELFTEST_FAIL" : "SPEKTRAFILM_FRAME_SELFTEST_OK")
         return failed ? 1 : 0
+    }
+
+    @MainActor
+    private static func checkWatermarkIdentityAndSelection() throws {
+        let identity = WatermarkIdentity.blank
+        guard identity.resolvedStudio == "LITEFILM",
+              identity.resolvedSignature == "LiteFilm",
+              identity.resolvedMonogram == "LF",
+              identity.resolvedInitial == "L",
+              identity.resolvedSite == "SUPERAITEST.COM/LITEFILM"
+        else { throw FrameCheck.message("LiteFilm 默认署名") }
+        let custom = WatermarkIdentity(displayName: "Kevin", studioName: "Spektra Lab", copyrightLine: "© Custom", monogram: "KV", siteURL: "kevin.film")
+        guard custom.resolvedSignature == "Kevin", custom.resolvedStudio == "SPEKTRA LAB",
+              custom.resolvedCopyright(year: "2026") == "© Custom",
+              custom.resolvedMonogram == "KV", custom.resolvedSite == "KEVIN.FILM"
+        else { throw FrameCheck.message("自定义署名被改写") }
+        let suite = "litefilm.watermark.selection.selftest"
+        guard let defaults = UserDefaults(suiteName: suite) else { throw FrameCheck.message("测试设置") }
+        defaults.removePersistentDomain(forName: suite)
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let model = LabModel(defaults: defaults)
+        model.watermark.displayName = "Kevin"
+        model.watermark.offsetX = 0.1
+        let before = model.watermark
+        model.chooseWatermark("invalid-id")
+        guard model.watermark == before, !model.canUndo else { throw FrameCheck.message("无效水印改变编辑") }
+        let pendingPaper = try FilmCatalog.load().papers.last?.id ?? model.paperID
+        model.previewPaper(pendingPaper)
+        model.chooseWatermark("wm_17")
+        model.chooseWatermark("wm_17")
+        guard model.watermark.enabled, model.watermark.activeID == "wm_17",
+              model.watermark.displayName == before.displayName, model.watermark.offsetX == before.offsetX,
+              let data = defaults.data(forKey: "spektrafilm.edit.v1"),
+              let saved = try? JSONDecoder().decode(PersistedEdit.self, from: data),
+              saved.watermark == model.watermark, saved.paperID == pendingPaper,
+              model.paperID == pendingPaper
+        else { throw FrameCheck.message("水印直接选择与保存") }
+        model.undo()
+        guard model.watermark == before, model.engineRenderCount == 0 else { throw FrameCheck.message("水印直接选择撤销") }
+        logLine("SPEKTRAFILM_WATERMARK_SELECTION_IDENTITY_OK")
     }
 
     private static func checkCatalog(_ catalog: FrameCatalog) throws {
@@ -401,6 +442,13 @@ enum FrameSelfTest {
             logLine("SPEKTRAFILM_FRAME_ENGINE_FAIL no preview \(model.errorText ?? "")")
             return 1
         }
+        guard let original = model.originalPreview?.cgImage,
+              max(original.width, original.height) <= MemoryTier.previewLongEdge,
+              ImageCodec.lumaSpread(original) > 0.02
+        else {
+            logLine("SPEKTRAFILM_ORIGINAL_PREVIEW_FAIL")
+            return 1
+        }
         let baseline = model.engineRenderCount
         guard baseline >= 1 else {
             logLine("SPEKTRAFILM_FRAME_ENGINE_FAIL count=\(baseline)")
@@ -539,6 +587,11 @@ enum FrameSelfTest {
             logLine("SPEKTRAFILM_FRAME_EXPOSURE_FAIL engine=\(model.engineRenderCount) before=\(beforeExposure) ev=\(model.exposureEV) frame=\(model.frame.activeFrameId)")
             return 1
         }
+        guard let heldOriginal = model.originalPreview?.cgImage, !changed(original, heldOriginal) else {
+            logLine("SPEKTRAFILM_ORIGINAL_PREVIEW_FAIL changed-with-edit")
+            return 1
+        }
+        logLine("SPEKTRAFILM_ORIGINAL_PREVIEW_OK")
         logLine("SPEKTRAFILM_FRAME_EXPOSURE_OK engine=\(model.engineRenderCount)")
         model.undo()
         await model.waitUntilSettled()
@@ -634,6 +687,30 @@ let savedName = model.watermark.displayName
         }
         logLine("SPEKTRAFILM_WATERMARK_PERSIST_OK name=\(savedName) x=\(savedX) y=\(savedY)")
 
+        // Compare actual PNG exports against the same custom mark drawn onto the actual unmarked export.
+        // This catches accidentally dropping identity/drag offset in the export snapshot.
+        model.shareURL = nil
+        model.export(.png, includeFrame: false, includeWatermark: false)
+        await model.waitUntilSettled()
+        guard let plainURL = model.shareURL, let exportedPlain = UIImage(contentsOfFile: plainURL.path)?.cgImage else {
+            logLine("SPEKTRAFILM_EXPORT_IDENTITY_FAIL plain")
+            return 1
+        }
+        model.shareURL = nil
+        model.export(.png, includeFrame: false, includeWatermark: true)
+        await model.waitUntilSettled()
+        guard let signedURL = model.shareURL, let exportedSigned = UIImage(contentsOfFile: signedURL.path)?.cgImage,
+              let preset = model.watermarkCatalog.preset(model.watermark.activeID),
+              let expectedSigned = WatermarkPainter.apply(exportedPlain, preset: preset, info: model.watermarkContext,
+                                                         identity: model.watermark.identity,
+                                                         offset: CGSize(width: model.watermark.offsetX, height: model.watermark.offsetY)),
+              changed(exportedPlain, exportedSigned), !changed(expectedSigned, exportedSigned)
+        else {
+            logLine("SPEKTRAFILM_EXPORT_IDENTITY_FAIL custom-or-offset")
+            return 1
+        }
+        logLine("SPEKTRAFILM_EXPORT_IDENTITY_OK")
+
         model.chooseFrame("editorial_02")
         model.watermark.enabled = true
         model.watermark.activeID = "wm_01"
@@ -663,6 +740,22 @@ let savedName = model.watermark.displayName
         }
         _ = try? writeProof(framedMark, name: "export-frame-on-watermark-on-inset")
         logLine("SPEKTRAFILM_WATERMARK_INSET_OK \(framedMark.width)x\(framedMark.height)")
+        let fullCatalog = model.catalog
+        let thumbnailEngineCount = model.engineRenderCount
+        model.catalog.films = Array(fullCatalog.films.prefix(2))
+        await model.requestCatalogThumbnails(papers: false)
+        model.catalog.papers = Array(fullCatalog.papers.prefix(2))
+        await model.requestCatalogThumbnails(papers: true)
+        let expectedThumbKeys = model.catalog.films.map { "film:" + $0.id } + model.catalog.papers.map { "paper:" + $0.id }
+        guard expectedThumbKeys.allSatisfy({ key in
+            guard let image = model.catalogThumbs[key]?.cgImage else { return false }
+            return max(image.width, image.height) <= 160 && image.width > 0 && image.height > 0
+        }), model.engineRenderCount == thumbnailEngineCount else {
+            logLine("SPEKTRAFILM_CATALOG_THUMBS_FAIL")
+            return 1
+        }
+        model.catalog = fullCatalog
+        logLine("SPEKTRAFILM_CATALOG_THUMBS_OK count=\(expectedThumbKeys.count) engineRenders=\(thumbnailEngineCount)")
         logLine("SPEKTRAFILM_FRAME_ENGINE_OK")
         return 0
     }
@@ -682,7 +775,8 @@ let savedName = model.watermark.displayName
                 different += 1
                 if different > 24 { return true }
             }
-            index += 16
+            // Scan every RGBA pixel: narrow glyphs can fall between a four-pixel stride.
+            index += 4
         }
         return false
     }

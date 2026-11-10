@@ -32,7 +32,7 @@ struct WatermarkContext: Equatable, Sendable {
     }
 }
 
-/// User-facing credit strings. Empty fields keep the built-in SPEKTRA / Spektra defaults.
+/// User-facing credit strings. Empty fields keep the built-in LITEFILM / LiteFilm defaults.
 struct WatermarkIdentity: Equatable, Sendable {
     var displayName: String = ""
     var studioName: String = ""
@@ -52,7 +52,7 @@ struct WatermarkIdentity: Equatable, Sendable {
         if !studio.isEmpty { return studio.uppercased() }
         let name = Self.cleaned(displayName)
         if !name.isEmpty { return name.uppercased() }
-        return "SPEKTRA"
+        return "LITEFILM"
     }
 
     /// Script / dual-line signature.
@@ -61,7 +61,7 @@ struct WatermarkIdentity: Equatable, Sendable {
         if !name.isEmpty { return name }
         let studio = Self.cleaned(studioName)
         if !studio.isEmpty { return studio }
-        return "Spektra"
+        return "LiteFilm"
     }
 
     /// One or two letters for ring / square / SF marks.
@@ -75,18 +75,18 @@ struct WatermarkIdentity: Equatable, Sendable {
             return (String(chars[0]) + String(chars[1])).uppercased()
         }
         if let first = letters.first { return String(first).uppercased() }
-        return "SF"
+        return "LF"
     }
 
     var resolvedInitial: String {
         let mark = resolvedMonogram
-        return mark.isEmpty ? "S" : String(mark.prefix(1))
+        return mark.isEmpty ? "L" : String(mark.prefix(1))
     }
 
     var resolvedSite: String {
         let site = Self.cleaned(siteURL)
         if !site.isEmpty { return site.uppercased() }
-        return "SPEKTRA.FILM"
+        return "SUPERAITEST.COM/LITEFILM"
     }
 
     func resolvedCopyright(year: String) -> String {
@@ -100,15 +100,15 @@ struct WatermarkEditState: Codable, Equatable, Hashable, Sendable {
     var schemaVersion: Int = 2
     var enabled: Bool = false
     var activeID: String = "wm_01"
-    /// 署名姓名。空则画家用 Spektra / SPEKTRA。
+    /// 署名姓名。空则画家用 LiteFilm / LITEFILM。
     var displayName: String = ""
-    /// 工作室或品牌。空则跟署名或默认 SPEKTRA。
+    /// 工作室或品牌。空则跟署名或默认 LITEFILM。
     var studioName: String = ""
     /// 整行版权。空则仍是 © {工作室} {年}。
     var copyrightLine: String = ""
-    /// 花押 1–2 字。空则从姓名推，再退回 SF / S。
+    /// 花押 1–2 字。空则从姓名推，再退回 LF / L。
     var monogram: String = ""
-    /// 短网址一行。空则 SPEKTRA.FILM。
+    /// 短网址一行。空则 SUPERAITEST.COM/LITEFILM。
     var siteURL: String = ""
     /// 相对内容区宽高的归一化偏移。0 是该预设默认锚点。
     var offsetX: Double = 0

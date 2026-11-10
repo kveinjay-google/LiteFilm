@@ -1,4 +1,4 @@
-SpektraFilm for iOS
+LiteFilm for iOS
 film modeling powered by spektrafilm
 
 Spectral film and print model, measured profiles, and the baked constants:

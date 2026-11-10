@@ -17,7 +17,9 @@ struct RenderParams: Equatable, Sendable {
             "output_color_space": "Display P3",
             "output_cctf_encoding": true,
             "preview_long_edge": previewLongEdge,
-            "exposure_compensation_ev": exposureEV,
+            // User exposure controls the finished photo; film exposure is automatically
+            // compensated by the enlarger and is unsuitable as a brightness slider.
+            "exposure_compensation_ev": 0.0,
             "auto_exposure": true,
         ]
         let data = try JSONSerialization.data(withJSONObject: object)
@@ -61,7 +63,7 @@ final class EngineClient: @unchecked Sendable {
             self.previewFrame = frame
             self.previewParams = params
             try self.openSession(frame: frame, params: params)
-            return try self.render(tier: "live")
+            return try self.render(tier: "live", exposureEV: params.exposureEV)
         }
     }
 
@@ -76,7 +78,7 @@ final class EngineClient: @unchecked Sendable {
             } else {
                 try self.apply(params)
             }
-            return try self.render(tier: "live")
+            return try self.render(tier: "live", exposureEV: params.exposureEV)
         }
     }
 
@@ -87,7 +89,7 @@ final class EngineClient: @unchecked Sendable {
             self.closeSession()
             do {
                 try self.openSession(frame: frame, params: params)
-                let rendered = try self.render(tier: "full")
+                let rendered = try self.render(tier: "full", exposureEV: params.exposureEV)
                 self.closeSession()
                 return rendered
             } catch {
@@ -142,7 +144,7 @@ final class EngineClient: @unchecked Sendable {
         }
     }
 
-    private func render(tier: String) throws -> Rendered {
+    private func render(tier: String, exposureEV: Double) throws -> Rendered {
         guard let session else { throw EngineError.message("没有打开的画面。") }
         var result = spk_result()
         let status = tier.withCString { spk_render(session, $0, &result) }
@@ -160,7 +162,7 @@ final class EngineClient: @unchecked Sendable {
                 rowStride: Int(result.row_stride_px)
             )
             rendered = Rendered(
-                image: image,
+                image: try PhotoProcessor.exposure(image, ev: exposureEV),
                 width: Int(result.width),
                 height: Int(result.height),
                 elapsedMS: result.elapsed_ms

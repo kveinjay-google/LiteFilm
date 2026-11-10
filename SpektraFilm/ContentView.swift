@@ -61,6 +61,7 @@ struct ContentView: View {
             if stage != .editor { fullscreen = false; comparing = false }
         }
         .sheet(isPresented: $showSettings) { ObsidianSettingsSheet(model: model) }
+        .fullScreenCover(isPresented: $model.showCropEditor) { CropEditor(model: model) }
         .sheet(isPresented: $showSignature) { ObsidianSignatureSheet(model: model) }
         .sheet(isPresented: $showFrames) { FrameGallerySheet(model: model) }
         .sheet(isPresented: $showExport) { ObsidianExportSheet(model: model) }

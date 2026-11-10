@@ -32,7 +32,7 @@ struct EditorControls: View {
                 Group {
                     switch tool {
                     case .film: filmPanel
-                    case .adjust: adjustmentPanel
+                    case .adjust: AdjustmentControls(model: model)
                     case .frame: framePanel
                     case .watermark: watermarkPanel
                     }
@@ -71,56 +71,74 @@ struct EditorControls: View {
                 category("胶片", selected: !papers) { papers = false }
                 category("相纸", selected: papers) { papers = true }
                 Spacer()
-                Text(papers ? "相纸模拟" : "胶片模拟").font(.caption).foregroundStyle(Ink.mute)
             }.padding(.horizontal, 20)
             ScrollViewReader { proxy in
                 ScrollView(.horizontal, showsIndicators: false) {
                     LazyHStack(alignment: .top, spacing: 12) {
-                        ForEach(papers ? model.catalog.papers : model.catalog.films) { stock in
-                            Button {
-                                if papers { model.selectPaper(stock.id) } else { model.selectFilm(stock.id) }
-                            } label: {
-                                thumbnail(title: stock.name,
-                                          image: model.catalogThumbs["\(papers ? "paper" : "film"):\(stock.id)"],
-                                          selected: stock.id == (papers ? model.paperID : model.filmID),
-                                          symbol: "film")
-                            }
-                            .id(stock.id)
-                            .accessibilityLabel(stock.name)
-                            .accessibilityAddTraits(stock.id == (papers ? model.paperID : model.filmID) ? [.isSelected] : [])
+                        ForEach(model.stocks(papers: papers)) { stock in
+                            stockTile(stock)
                         }
                     }.padding(.horizontal, 20)
                 }
                 .onAppear { proxy.scrollTo(papers ? model.paperID : model.filmID, anchor: .center) }
                 .onChange(of: papers) { _, value in proxy.scrollTo(value ? model.paperID : model.filmID, anchor: .center) }
+                .onChange(of: model.favoriteFilms) { _, _ in
+                    guard !papers, let first = model.stocks(papers: false).first else { return }
+                    withAnimation(.easeOut(duration: 0.2)) { proxy.scrollTo(first.id, anchor: .leading) }
+                }
+                .onChange(of: model.favoritePapers) { _, _ in
+                    guard papers, let first = model.stocks(papers: true).first else { return }
+                    withAnimation(.easeOut(duration: 0.2)) { proxy.scrollTo(first.id, anchor: .leading) }
+                }
             }
-            HStack {
-                Text(model.filmLabel).lineLimit(1)
-                Text("/").foregroundStyle(Ink.mute)
-                Text(model.catalog.paper(model.paperID)?.name ?? "").lineLimit(1)
+            VStack(alignment: .leading, spacing: 4) {
+                Text("\(model.stockCode(model.filmID, papers: false))  \(model.filmLabel)")
+                Text("\(model.stockCode(model.paperID, papers: true))  \(model.catalog.paper(model.paperID)?.name ?? "")")
             }
-            .font(.caption).foregroundStyle(Ink.mute).padding(.horizontal, 20)
+            .font(.caption).foregroundStyle(Ink.mute)
+            .fixedSize(horizontal: false, vertical: true).padding(.horizontal, 20)
         }
     }
 
-    private var adjustmentPanel: some View {
-        VStack(spacing: 16) {
-            HStack {
-                Text("曝光").font(.headline)
-                Spacer()
-                Text(String(format: "%+.1f EV", model.exposureEV))
-                    .font(.body.monospacedDigit()).foregroundStyle(Ink.amber)
+    private func stockTile(_ stock: Stock) -> some View {
+        let selected = stock.id == (papers ? model.paperID : model.filmID)
+        let favorite = model.isFavorite(stock.id, papers: papers)
+        return thumbnail(title: model.stockCode(stock.id, papers: papers),
+                         image: model.catalogThumbs["\(papers ? "paper" : "film"):\(stock.id)"],
+                         selected: selected, symbol: "film", captionHeight: 16)
+            .overlay(alignment: .topTrailing) {
+                if favorite {
+                    Image(systemName: "star.fill")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(Ink.amber)
+                        .padding(5).background(Ink.void.opacity(0.85), in: Circle())
+                        .padding(5)
+                }
             }
-            ExposureRuler(value: Binding(get: { model.exposureEV }, set: { model.setExposure($0) }))
-                .frame(height: 66)
-            HStack {
-                Text("轻扫刻度，微调明暗").font(.caption).foregroundStyle(Ink.mute)
-                Spacer()
-                Button("重置曝光") { model.setExposure(0) }
-                    .font(.subheadline).frame(minHeight: 44)
-                    .disabled(model.exposureEV == 0)
+            .contentShape(Rectangle())
+            .gesture(LongPressGesture(minimumDuration: 0.45)
+                .exclusively(before: TapGesture())
+                .onEnded { result in
+                    switch result {
+                    case .first:
+                        model.toggleFavorite(stock.id, papers: papers)
+                    case .second:
+                        selectStock(stock.id)
+                    }
+                })
+            .id(stock.id)
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("\(model.stockCode(stock.id, papers: papers))，\(stock.name)")
+            .accessibilityValue(favorite ? "已收藏" : "")
+            .accessibilityAddTraits(selected ? [.isButton, .isSelected] : [.isButton])
+            .accessibilityAction { selectStock(stock.id) }
+            .accessibilityAction(named: favorite ? "取消收藏" : "收藏") {
+                model.toggleFavorite(stock.id, papers: papers)
             }
-        }.padding(.horizontal, 20)
+    }
+
+    private func selectStock(_ id: String) {
+        if papers { model.selectPaper(id) } else { model.selectFilm(id) }
     }
 
     private var framePanel: some View {
@@ -236,7 +254,8 @@ struct EditorControls: View {
         }
     }
 
-    private func thumbnail(title: String, image: UIImage?, selected: Bool, symbol: String) -> some View {
+    private func thumbnail(title: String, image: UIImage?, selected: Bool, symbol: String,
+                           captionHeight: CGFloat = 32) -> some View {
         VStack(alignment: .leading, spacing: 7) {
             ZStack {
                 Ink.surface
@@ -249,45 +268,9 @@ struct EditorControls: View {
             .frame(width: 96, height: 82)
             .clipShape(RoundedRectangle(cornerRadius: 5))
             .overlay(RoundedRectangle(cornerRadius: 5).stroke(selected ? Ink.amber : Ink.hairline, lineWidth: selected ? 2 : 0.5))
-            Text(title).font(.caption).lineLimit(2).frame(width: 96, height: 32, alignment: .topLeading)
+            Text(title).font(.caption).lineLimit(captionHeight <= 16 ? 1 : 2)
+                .frame(width: 96, height: captionHeight, alignment: .topLeading)
                 .foregroundStyle(selected ? Ink.amber : Ink.ivory)
-        }
-    }
-}
-
-private struct ExposureRuler: View {
-    @Binding var value: Double
-    var body: some View {
-        GeometryReader { geo in
-            let width = max(1, geo.size.width - 12)
-            ZStack(alignment: .topLeading) {
-                ForEach(0...40, id: \.self) { tick in
-                    Rectangle().fill(Ink.ivory.opacity(tick % 10 == 0 ? 0.9 : 0.45))
-                        .frame(width: 1, height: tick % 10 == 0 ? 25 : (tick % 5 == 0 ? 16 : 9))
-                        .offset(x: 6 + width * Double(tick) / 40, y: tick % 10 == 0 ? 3 : 11)
-                }
-                ForEach(-2...2, id: \.self) { number in
-                    Text(number > 0 ? "+\(number)" : "\(number)")
-                        .font(.caption.monospacedDigit()).foregroundStyle(Ink.mute)
-                        .frame(width: 30).offset(x: 6 + width * Double(number + 2) / 4 - 15, y: 38)
-                }
-                RoundedRectangle(cornerRadius: 1).fill(Ink.amber).frame(width: 3, height: 34)
-                    .offset(x: 5 + width * (value + 2) / 4)
-            }
-            .frame(width: geo.size.width, height: geo.size.height, alignment: .topLeading).contentShape(Rectangle())
-            .gesture(DragGesture(minimumDistance: 0).onChanged { event in
-                value = min(2, max(-2, ((event.location.x - 6) / width) * 4 - 2))
-            })
-        }
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel("曝光")
-        .accessibilityValue(String(format: "%+.1f EV", value))
-        .accessibilityAdjustableAction { direction in
-            switch direction {
-            case .increment: value = min(2, value + 0.1)
-            case .decrement: value = max(-2, value - 0.1)
-            @unknown default: break
-            }
         }
     }
 }

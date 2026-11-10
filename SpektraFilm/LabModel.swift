@@ -10,6 +10,7 @@ struct EditSnapshot: Equatable {
     var exposureEV: Double
     var frame: FrameEditState
     var watermark: WatermarkEditState
+    var adjustments: PhotoAdjustments
 }
 
 @MainActor
@@ -20,11 +21,16 @@ final class LabModel: ObservableObject {
     @Published private(set) var catalogThumbs: [String: UIImage] = [:]
     @Published private(set) var watermarkThumbs: [String: UIImage] = [:]
     @Published var busy = false
+    @Published var showCropEditor = false
     @Published var status = "正在准备引擎"
     @Published var errorText: String?
     @Published var filmID = "kodak_portra_400"
     @Published var paperID = "kodak_portra_endura"
     @Published var exposureEV = 0.0
+    @Published private(set) var adjustments = PhotoAdjustments()
+    @Published private(set) var editingSourcePreview: UIImage?
+    @Published private(set) var favoriteFilms: Set<String> = []
+    @Published private(set) var favoritePapers: Set<String> = []
     @Published var sourceTitle = "内置色卡"
     @Published var shareURL: URL?
     @Published var catalog = FilmCatalog(films: [], papers: [])
@@ -78,6 +84,7 @@ final class LabModel: ObservableObject {
     private var sourceImportID: String?
     private var processed: CGImage?
     private var processedKey: RenderParams?
+    private var processedAdjustments: PhotoAdjustments?
     private var thumbPhoto: CGImage?
     private var thumbToken = 0
     private var thumbKey = ""
@@ -91,6 +98,35 @@ final class LabModel: ObservableObject {
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
+        favoriteFilms = Set(defaults.stringArray(forKey: "litefilm.favoriteFilms") ?? [])
+        favoritePapers = Set(defaults.stringArray(forKey: "litefilm.favoritePapers") ?? [])
+    }
+
+    func stocks(papers: Bool) -> [Stock] {
+        let all = papers ? catalog.papers : catalog.films
+        let favorites = papers ? favoritePapers : favoriteFilms
+        return all.filter { favorites.contains($0.id) } + all.filter { !favorites.contains($0.id) }
+    }
+
+    func stockCode(_ id: String, papers: Bool) -> String {
+        let all = papers ? catalog.papers : catalog.films
+        guard let index = all.firstIndex(where: { $0.id == id }) else { return "—" }
+        return String(format: "%@%02d", papers ? "P" : "F", index + 1)
+    }
+
+    func isFavorite(_ id: String, papers: Bool) -> Bool {
+        (papers ? favoritePapers : favoriteFilms).contains(id)
+    }
+
+    func toggleFavorite(_ id: String, papers: Bool) {
+        guard (papers ? catalog.paper(id) : catalog.film(id)) != nil else { return }
+        var favorites = papers ? favoritePapers : favoriteFilms
+        let added = !favorites.contains(id)
+        if added { favorites.insert(id) } else { favorites.remove(id) }
+        if papers { favoritePapers = favorites } else { favoriteFilms = favorites }
+        defaults.set(favorites.sorted(), forKey: papers ? "litefilm.favoritePapers" : "litefilm.favoriteFilms")
+        flashNotice(added ? "已收藏，置顶显示" : "已取消收藏")
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
     }
 
     var filmLabel: String { catalog.film(filmID)?.name ?? "" }
@@ -189,7 +225,10 @@ final class LabModel: ObservableObject {
             let info = ImageCodec.probe(data)
             let title = info.isRaw ? "RAW 照片" : "照片"
             let saved = try gallery.importPhoto(data: data, title: title)
-            try await use(data: data, title: saved.title, importID: saved.id)
+            let previousAdjustments = adjustments
+            adjustments = PhotoAdjustments()
+            do { try await use(data: data, title: saved.title, importID: saved.id) }
+            catch { adjustments = previousAdjustments; throw error }
             stage = .editor
             persist()
             if info.isRaw {
@@ -224,7 +263,12 @@ final class LabModel: ObservableObject {
                 throw EngineError.message("安装包里没有色卡。")
             }
             let data = try Data(contentsOf: sampleURL)
-            try await use(data: data, title: "内置色卡", importID: nil)
+            flushPending()
+            await waitUntilSettled()
+            let previous = adjustments
+            if sourceImportID != nil { adjustments = PhotoAdjustments() }
+            do { try await use(data: data, title: "内置色卡", importID: nil) }
+            catch { adjustments = previous; throw error }
             persist()
         } catch {
             errorText = error.localizedDescription
@@ -252,20 +296,31 @@ final class LabModel: ObservableObject {
     }
 
     func openImport(id: String) async {
+        flushPending()
+        await waitUntilSettled()
+        let previous = snapshot()
         do {
             guard let item = gallery.item(id: id) else {
                 errorText = "画廊里找不到这张照片。"
                 return
             }
+            let data = try gallery.loadOriginalData(for: item)
             if let recipe = item.recipe {
                 applyRecipe(recipe)
+            } else if sourceImportID != item.id {
+                adjustments = PhotoAdjustments()
             }
-            let data = try gallery.loadOriginalData(for: item)
             try await use(data: data, title: item.title, importID: item.id)
             stage = .editor
             persist()
             logLine("SPEKTRAFILM_NAV editor source=\(item.isVariant ? "variant" : "import") id=\(id)")
         } catch {
+            filmID = previous.filmID
+            paperID = previous.paperID
+            exposureEV = previous.exposureEV
+            frame = previous.frame
+            watermark = previous.watermark
+            adjustments = previous.adjustments
             errorText = error.localizedDescription
             logLine("SPEKTRAFILM_IMPORT_FAIL \(error.localizedDescription)")
         }
@@ -299,7 +354,8 @@ final class LabModel: ObservableObject {
             paperID: paperID,
             exposureEV: exposureEV,
             frame: frame,
-            watermark: watermark
+            watermark: watermark,
+            adjustments: adjustments
         )
         let thumb: Data? = {
             guard let preview else { return nil }
@@ -376,11 +432,43 @@ final class LabModel: ObservableObject {
 
     /// Snapshot the value still on screen, then move. One settled drag is one undo.
     func setExposure(_ value: Double) {
+        guard value.isFinite else { return }
         let clamped = min(2, max(-2, (value * 10).rounded() / 10))
         guard abs(clamped - exposureEV) > 0.0001 else { return }
         if undoBaseline == nil { undoBaseline = snapshot() }
         exposureEV = clamped
         armSettle()
+    }
+
+    func setAdjustment(_ keyPath: WritableKeyPath<PhotoAdjustments, Double>, _ value: Double) {
+        guard value.isFinite else { return }
+        let bounded = min(1, max(-1, (value * 100).rounded() / 100))
+        guard adjustments[keyPath: keyPath] != bounded else { return }
+        if undoBaseline == nil { undoBaseline = snapshot() }
+        adjustments[keyPath: keyPath] = bounded
+        armSettle()
+    }
+
+    func applyGeometry(_ value: PhotoGeometry) {
+        flushPending()
+        let value = value.sanitized()
+        guard value != adjustments.geometry else { return }
+        let before = snapshot()
+        adjustments.geometry = value
+        pushUndo(before)
+        persist()
+        kickNow(keepingPending: true)
+    }
+
+    func resetAdjustments() {
+        flushPending()
+        guard adjustments != PhotoAdjustments() || exposureEV != 0 else { return }
+        let before = snapshot()
+        adjustments = PhotoAdjustments()
+        exposureEV = 0
+        pushUndo(before)
+        persist()
+        kickNow(keepingPending: true)
     }
 
     func commitMove(_ move: FrameMove) {
@@ -617,10 +705,10 @@ final class LabModel: ObservableObject {
     func export(_ format: ExportFormat, includeFrame: Bool, includeWatermark: Bool) {
         guard started, let data = sourceData, !inFlight else { return }
         let params = currentParams()
+        let edits = adjustments
         let enabled = frame.enabled
         let preset = frameCatalog.frame(frame.activeFrameId)
-        let mode = frameCatalog.canvasMode(ratioID: resolvedRatioID, source: sourcePixel)
-        let source = sourcePixel
+        let catalog = frameCatalog
         let label = filmLabel
         let ratio = resolvedRatioID
         let frameID = enabled ? frame.activeFrameId : "none"
@@ -642,10 +730,13 @@ final class LabModel: ObservableObject {
                     let buffer = try ImageCodec.decode(data, maxLongEdge: edge)
                     logLine("SPEKTRAFILM_EXPORT_ENGINE edge=\(edge)")
                     let output = try engine.export(frame: buffer, params: params)
+                    let adjusted = try PhotoProcessor.apply(output.image, settings: edits)
+                    let source = CGSize(width: adjusted.width, height: adjusted.height)
+                    let mode = catalog.canvasMode(ratioID: ratio, source: source)
                     let request: PaintRequest?
                     if drawFrame, let preset {
                         request = PaintRequest(
-                            photo: output.image,
+                            photo: adjusted,
                             preset: preset,
                             mode: mode,
                             sourceWidth: Double(source.width),
@@ -657,7 +748,7 @@ final class LabModel: ObservableObject {
                     } else {
                         request = nil
                     }
-                    let image = LabModel.compose(photo: output.image, frame: request, watermark: overlay) ?? output.image
+                    let image = LabModel.compose(photo: adjusted, frame: request, watermark: overlay) ?? adjusted
                     let url = try ImageCodec.write(image, format: format)
                     return (url, image.width, image.height, output.elapsedMS)
                 }.value
@@ -704,6 +795,9 @@ final class LabModel: ObservableObject {
         let backupPixel = sourcePixel
         let backupProcessed = processed
         let backupKey = processedKey
+        let backupAdjustments = processedAdjustments
+        let backupEditingSource = editingSourcePreview
+        let backupThumb = thumbPhoto
         let backupPreview = preview
         let backupImport = sourceImportID
         sourceData = data
@@ -719,12 +813,26 @@ final class LabModel: ObservableObject {
             sourcePixel = backupPixel
             processed = backupProcessed
             processedKey = backupKey
+            processedAdjustments = backupAdjustments
+            editingSourcePreview = backupEditingSource
+            thumbPhoto = backupThumb
             preview = backupPreview
             sourceImportID = backupImport
             engineOpen = false
             errorText = message
             status = "导入失败"
             throw EngineError.message(message)
+        }
+        if backupImport != importID {
+            // A previous photo's crop must never become this photo's Undo action.
+            undoManager?.removeAllActions(withTarget: self)
+            undoStack.removeAll()
+            undoBaseline = nil
+            pendingFilm = nil
+            pendingPaper = nil
+            debounce?.cancel()
+            debounce = nil
+            syncCanUndo()
         }
         originalPreview = UIImage(cgImage: source.1)
         sourceRevision += 1
@@ -983,7 +1091,7 @@ final class LabModel: ObservableObject {
     /// Frame, ratio, and mat changes reuse `processed`. Only film, paper, and exposure reopen the engine.
     private func refreshAppearance() {
         guard started, sourceData != nil else { return }
-        if processed != nil, processedKey == currentParams() {
+        if processed != nil, processedKey == currentParams(), processedAdjustments == adjustments {
             frameCacheHits += 1
             logLine("SPEKTRAFILM_FRAME_CACHE_HIT hits=\(frameCacheHits) engineRenders=\(engineRenderCount) film=\(filmID) paper=\(paperID) ev=\(exposureEV) frame=\(frame.enabled ? frame.activeFrameId : "none") ratio=\(resolvedRatioID)")
             paintsInFlight += 1
@@ -1037,19 +1145,26 @@ final class LabModel: ObservableObject {
         }
         errorText = nil
         let params = currentParams()
+        let edits = adjustments
         let reopen = !engineOpen || decoded != nil
         let engine = self.engine
         status = reopen ? "正在渲染预览" : "正在换胶片"
         logLine("SPEKTRAFILM_ENGINE_RENDER reopen=\(reopen) film=\(params.film) paper=\(params.paper) ev=\(params.exposureEV)")
         do {
-            let rendered = try await Task.detached {
+            let result = try await Task.detached {
+                let base: Rendered
                 if reopen {
                     let frame = try decoded ?? ImageCodec.decode(data, maxLongEdge: MemoryTier.previewLongEdge)
-                    return try engine.renderPreview(frame: frame, params: params)
+                    base = try engine.renderPreview(frame: frame, params: params)
+                } else {
+                    base = try engine.renderAgain(params: params)
                 }
-                return try engine.renderAgain(params: params)
+                let toned = try PhotoProcessor.tone(base.image, settings: edits)
+                let adjusted = try PhotoProcessor.geometry(toned, settings: edits.geometry)
+                return (Rendered(image: adjusted, width: adjusted.width, height: adjusted.height, elapsedMS: base.elapsedMS), toned)
             }.value
-            let stale = dirty
+            let rendered = result.0
+            let stale = dirty || edits != adjustments || params != currentParams()
             engineRenderCount += 1
             logLine("SPEKTRAFILM_ENGINE_DONE count=\(engineRenderCount) \(rendered.width)x\(rendered.height) ms=\(Int(rendered.elapsedMS))")
             if stale {
@@ -1064,6 +1179,8 @@ final class LabModel: ObservableObject {
             }
             processed = rendered.image
             processedKey = params
+            processedAdjustments = edits
+            editingSourcePreview = UIImage(cgImage: result.1)
             engineOpen = true
             thumbPhoto = FramePainter.downsample(rendered.image, longEdge: 280)
             status = "预览 \(rendered.width)×\(rendered.height) · \(Self.seconds(rendered.elapsedMS))"
@@ -1091,6 +1208,8 @@ final class LabModel: ObservableObject {
         if !alreadyMarked { paintsInFlight += 1 }
         defer { paintsInFlight -= 1 }
         guard let processed else { return }
+        frameToken += 1
+        let token = frameToken
         let photo = processed
         let request = makePaint(photo, bits: 8, opaque: false)
         let overlay = watermarkDraw()
@@ -1098,8 +1217,6 @@ final class LabModel: ObservableObject {
             preview = UIImage(cgImage: photo)
             return
         }
-        frameToken += 1
-        let token = frameToken
         let image = await Task.detached(priority: .userInitiated) {
             LabModel.compose(photo: photo, frame: request, watermark: overlay)
         }.value
@@ -1199,9 +1316,9 @@ final class LabModel: ObservableObject {
         return PaintRequest(
             photo: photo,
             preset: preset,
-            mode: frameCatalog.canvasMode(ratioID: resolvedRatioID, source: sourcePixel),
-            sourceWidth: Double(sourcePixel.width),
-            sourceHeight: Double(sourcePixel.height),
+            mode: frameCatalog.canvasMode(ratioID: resolvedRatioID, source: CGSize(width: photo.width, height: photo.height)),
+            sourceWidth: Double(photo.width),
+            sourceHeight: Double(photo.height),
             filmLabel: filmLabel,
             bits: bits,
             opaqueBackdrop: opaque
@@ -1220,7 +1337,7 @@ final class LabModel: ObservableObject {
         thumbToken += 1
         let token = thumbToken
         let shared = SharedImage(image: thumbPhoto)
-        let source = sourcePixel
+        let source = CGSize(width: processed?.width ?? thumbPhoto.width, height: processed?.height ?? thumbPhoto.height)
         let label = filmLabel
         let jobs: [ThumbJob] = frameCatalog.frames.map { preset in
             let ratio = frame.ratio.mode == "followFrame" ? preset.defaultRatioId : frame.ratio.ratioId
@@ -1288,6 +1405,7 @@ final class LabModel: ObservableObject {
         var nextMark = recipe.watermark
         nextMark.sanitize(catalog: watermarkCatalog)
         watermark = nextMark
+        adjustments = (recipe.adjustments ?? PhotoAdjustments()).sanitized()
         pendingFilm = nil
         pendingPaper = nil
         undoBaseline = nil
@@ -1308,7 +1426,7 @@ final class LabModel: ObservableObject {
     }
 
     private func snapshot() -> EditSnapshot {
-        EditSnapshot(filmID: filmID, paperID: paperID, exposureEV: exposureEV, frame: frame, watermark: watermark)
+        EditSnapshot(filmID: filmID, paperID: paperID, exposureEV: exposureEV, frame: frame, watermark: watermark, adjustments: adjustments)
     }
 
     private func pushUndo(_ previous: EditSnapshot) {
@@ -1334,11 +1452,13 @@ final class LabModel: ObservableObject {
         exposureEV = previous.exposureEV
         frame = previous.frame
         watermark = previous.watermark
+        adjustments = previous.adjustments
         if recordInverse { pushUndo(current) }
         persist()
         let filmTouched = current.filmID != previous.filmID
             || current.paperID != previous.paperID
             || abs(current.exposureEV - previous.exposureEV) > 0.0001
+            || current.adjustments != previous.adjustments
         if filmTouched {
             kickNow(keepingPending: true)
         } else {
@@ -1355,7 +1475,7 @@ final class LabModel: ObservableObject {
     private func persist() {
         guard persistEnabled else { return }
         let payload = PersistedEdit(
-            schemaVersion: 5,
+            schemaVersion: 6,
             filmID: filmID,
             paperID: paperID,
             exposureEV: exposureEV,
@@ -1364,7 +1484,8 @@ final class LabModel: ObservableObject {
             exportIncludeFrame: exportIncludeFrame,
             exportIncludeWatermark: exportIncludeWatermark,
             previewTransition: previewTransition.rawValue,
-            sourceImportID: sourceImportID
+            sourceImportID: sourceImportID,
+            adjustments: adjustments
         )
         guard let data = try? JSONEncoder().encode(payload) else { return }
         defaults.set(data, forKey: Self.persistKey)
@@ -1392,6 +1513,7 @@ final class LabModel: ObservableObject {
             savedMark.sanitize(catalog: watermarkCatalog)
             watermark = savedMark
         }
+        adjustments = (saved.adjustments ?? PhotoAdjustments()).sanitized()
         if let includeFrame = saved.exportIncludeFrame { exportIncludeFrame = includeFrame }
         if let includeWatermark = saved.exportIncludeWatermark { exportIncludeWatermark = includeWatermark }
         previewTransition = PreviewTransition.resolve(saved.previewTransition)

@@ -1,6 +1,20 @@
 import Foundation
+import CoreGraphics
 
 enum SelfTest {
+    static func meanLuma(_ image: CGImage) -> Double {
+        var pixels = [UInt8](repeating: 0, count: 64 * 64 * 4)
+        pixels.withUnsafeMutableBytes { bytes in
+            let ctx = CGContext(data: bytes.baseAddress, width: 64, height: 64, bitsPerComponent: 8,
+                                bytesPerRow: 256, space: CGColorSpace(name: CGColorSpace.sRGB)!,
+                                bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
+            ctx.draw(image, in: CGRect(x: 0, y: 0, width: 64, height: 64))
+        }
+        return stride(from: 0, to: pixels.count, by: 4).reduce(0.0) {
+            $0 + 0.2126 * Double(pixels[$1]) + 0.7152 * Double(pixels[$1 + 1]) + 0.0722 * Double(pixels[$1 + 2])
+        } / 4096
+    }
+
     static func run() -> Int32 {
         logLine("SPEKTRAFILM_SELFTEST_START")
         do {
@@ -41,6 +55,17 @@ enum SelfTest {
                 logLine("SPEKTRAFILM_SELFTEST_FAIL render has no tonal variation")
                 return 1
             }
+            var brightParams = params
+            brightParams.exposureEV = 1
+            let bright = try engine.renderAgain(params: brightParams)
+            brightParams.exposureEV = -1
+            let dark = try engine.renderAgain(params: brightParams)
+            let levels = [meanLuma(dark.image), meanLuma(rendered.image), meanLuma(bright.image)]
+            logLine("LITEFILM_EXPOSURE_LEVELS \(levels)")
+            guard levels[0] < levels[1] * 0.88, levels[2] > levels[1] * 1.12 else {
+                throw EngineError.message("Exposure +/-1 EV must visibly change final photo brightness")
+            }
+            try AdjustmentSelfTest.run()
             let jpeg = try ImageCodec.write(rendered.image, format: .jpeg)
             let png = try ImageCodec.write(rendered.image, format: .png)
             let heic = try ImageCodec.write(rendered.image, format: .heic)

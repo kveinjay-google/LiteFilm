@@ -58,6 +58,8 @@ enum FrameSelfTest {
             failed = true
             logLine("SPEKTRAFILM_FRAME_PIXEL_FAIL \(error.localizedDescription)")
         }
+        do { try await AdjustmentSelfTest.checkModel() }
+        catch { failed = true; logLine("LITEFILM_ADJUSTMENT_MODEL_FAIL \(error.localizedDescription)") }
         if await checkEngine() != 0 {
             failed = true
         }

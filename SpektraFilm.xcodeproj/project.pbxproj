@@ -21,27 +21,28 @@
 		E10000000000000000001019 /* PhotoAdjustments.swift in Sources */ = {isa = PBXBuildFile; fileRef = E10000000000000000001018 /* PhotoAdjustments.swift */; };
 		E1000000000000000000101B /* AdjustmentSelfTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1000000000000000000101A /* AdjustmentSelfTest.swift */; };
 		E1000000000000000000101D /* ImageCodec.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1000000000000000000101C /* ImageCodec.swift */; };
-		E1000000000000000000101F /* FilmCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1000000000000000000101E /* FilmCatalog.swift */; };
-		E10000000000000000001021 /* FrameModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = E10000000000000000001020 /* FrameModels.swift */; };
-		E10000000000000000001023 /* FramePainter.swift in Sources */ = {isa = PBXBuildFile; fileRef = E10000000000000000001022 /* FramePainter.swift */; };
-		E10000000000000000001025 /* FrameChrome.swift in Sources */ = {isa = PBXBuildFile; fileRef = E10000000000000000001024 /* FrameChrome.swift */; };
-		E10000000000000000001027 /* FrameSelfTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = E10000000000000000001026 /* FrameSelfTest.swift */; };
-		E10000000000000000001029 /* WatermarkModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = E10000000000000000001028 /* WatermarkModels.swift */; };
-		E1000000000000000000102B /* WatermarkPainter.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1000000000000000000102A /* WatermarkPainter.swift */; };
-		E1000000000000000000102D /* SelfTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1000000000000000000102C /* SelfTest.swift */; };
-		E10000000000000000001030 /* FilmCatalog.json in Resources */ = {isa = PBXBuildFile; fileRef = E1000000000000000000102F /* FilmCatalog.json */; };
-		E10000000000000000001032 /* FrameCatalog.json in Resources */ = {isa = PBXBuildFile; fileRef = E10000000000000000001031 /* FrameCatalog.json */; };
-		E10000000000000000001034 /* SampleBars.png in Resources */ = {isa = PBXBuildFile; fileRef = E10000000000000000001033 /* SampleBars.png */; };
-		E10000000000000000001036 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = E10000000000000000001035 /* LaunchScreen.storyboard */; };
-		E10000000000000000001059 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E1000000000000000000102E /* Assets.xcassets */; };
-		E10000000000000000001039 /* Metal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E10000000000000000001038 /* Metal.framework */; };
-		E1000000000000000000103B /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E1000000000000000000103A /* QuartzCore.framework */; };
-		E1000000000000000000103D /* CoreText.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E1000000000000000000103C /* CoreText.framework */; };
-		E1000000000000000000103F /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E1000000000000000000103E /* CoreGraphics.framework */; };
-		E10000000000000000001041 /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E10000000000000000001040 /* Accelerate.framework */; };
-		E10000000000000000001043 /* PhotosUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E10000000000000000001042 /* PhotosUI.framework */; };
-		E10000000000000000001045 /* ImageIO.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E10000000000000000001044 /* ImageIO.framework */; };
-		E10000000000000000001047 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E10000000000000000001046 /* UIKit.framework */; };
+		E1000000000000000000101F /* ExportEncoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1000000000000000000101E /* ExportEncoder.swift */; };
+		E10000000000000000001021 /* FilmCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = E10000000000000000001020 /* FilmCatalog.swift */; };
+		E10000000000000000001023 /* FrameModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = E10000000000000000001022 /* FrameModels.swift */; };
+		E10000000000000000001025 /* FramePainter.swift in Sources */ = {isa = PBXBuildFile; fileRef = E10000000000000000001024 /* FramePainter.swift */; };
+		E10000000000000000001027 /* FrameChrome.swift in Sources */ = {isa = PBXBuildFile; fileRef = E10000000000000000001026 /* FrameChrome.swift */; };
+		E10000000000000000001029 /* FrameSelfTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = E10000000000000000001028 /* FrameSelfTest.swift */; };
+		E1000000000000000000102B /* WatermarkModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1000000000000000000102A /* WatermarkModels.swift */; };
+		E1000000000000000000102D /* WatermarkPainter.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1000000000000000000102C /* WatermarkPainter.swift */; };
+		E1000000000000000000102F /* SelfTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1000000000000000000102E /* SelfTest.swift */; };
+		E10000000000000000001032 /* FilmCatalog.json in Resources */ = {isa = PBXBuildFile; fileRef = E10000000000000000001031 /* FilmCatalog.json */; };
+		E10000000000000000001034 /* FrameCatalog.json in Resources */ = {isa = PBXBuildFile; fileRef = E10000000000000000001033 /* FrameCatalog.json */; };
+		E10000000000000000001036 /* SampleBars.png in Resources */ = {isa = PBXBuildFile; fileRef = E10000000000000000001035 /* SampleBars.png */; };
+		E10000000000000000001038 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = E10000000000000000001037 /* LaunchScreen.storyboard */; };
+		E1000000000000000000105B /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = E10000000000000000001030 /* Assets.xcassets */; };
+		E1000000000000000000103B /* Metal.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E1000000000000000000103A /* Metal.framework */; };
+		E1000000000000000000103D /* QuartzCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E1000000000000000000103C /* QuartzCore.framework */; };
+		E1000000000000000000103F /* CoreText.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E1000000000000000000103E /* CoreText.framework */; };
+		E10000000000000000001041 /* CoreGraphics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E10000000000000000001040 /* CoreGraphics.framework */; };
+		E10000000000000000001043 /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E10000000000000000001042 /* Accelerate.framework */; };
+		E10000000000000000001045 /* PhotosUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E10000000000000000001044 /* PhotosUI.framework */; };
+		E10000000000000000001047 /* ImageIO.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E10000000000000000001046 /* ImageIO.framework */; };
+		E10000000000000000001049 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E10000000000000000001048 /* UIKit.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -60,67 +61,68 @@
 		E10000000000000000001018 /* PhotoAdjustments.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhotoAdjustments.swift; sourceTree = "<group>"; };
 		E1000000000000000000101A /* AdjustmentSelfTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AdjustmentSelfTest.swift; sourceTree = "<group>"; };
 		E1000000000000000000101C /* ImageCodec.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageCodec.swift; sourceTree = "<group>"; };
-		E1000000000000000000101E /* FilmCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilmCatalog.swift; sourceTree = "<group>"; };
-		E10000000000000000001020 /* FrameModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrameModels.swift; sourceTree = "<group>"; };
-		E10000000000000000001022 /* FramePainter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FramePainter.swift; sourceTree = "<group>"; };
-		E10000000000000000001024 /* FrameChrome.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrameChrome.swift; sourceTree = "<group>"; };
-		E10000000000000000001026 /* FrameSelfTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrameSelfTest.swift; sourceTree = "<group>"; };
-		E10000000000000000001028 /* WatermarkModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatermarkModels.swift; sourceTree = "<group>"; };
-		E1000000000000000000102A /* WatermarkPainter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatermarkPainter.swift; sourceTree = "<group>"; };
-		E1000000000000000000102C /* SelfTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelfTest.swift; sourceTree = "<group>"; };
-		E10000000000000000001037 /* SpektraFilm-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "SpektraFilm-Bridging-Header.h"; sourceTree = "<group>"; };
-		E1000000000000000000102F /* FilmCatalog.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = FilmCatalog.json; sourceTree = "<group>"; };
-		E10000000000000000001031 /* FrameCatalog.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = FrameCatalog.json; sourceTree = "<group>"; };
-		E10000000000000000001033 /* SampleBars.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = SampleBars.png; sourceTree = "<group>"; };
-		E10000000000000000001035 /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
-		E1000000000000000000102E /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
-		E1000000000000000000104D /* LiteFilm.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LiteFilm.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		E10000000000000000001038 /* Metal.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Metal.framework; path = System/Library/Frameworks/Metal.framework; sourceTree = SDKROOT; };
-		E1000000000000000000103A /* QuartzCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuartzCore.framework; path = System/Library/Frameworks/QuartzCore.framework; sourceTree = SDKROOT; };
-		E1000000000000000000103C /* CoreText.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreText.framework; path = System/Library/Frameworks/CoreText.framework; sourceTree = SDKROOT; };
-		E1000000000000000000103E /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
-		E10000000000000000001040 /* Accelerate.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Accelerate.framework; path = System/Library/Frameworks/Accelerate.framework; sourceTree = SDKROOT; };
-		E10000000000000000001042 /* PhotosUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = PhotosUI.framework; path = System/Library/Frameworks/PhotosUI.framework; sourceTree = SDKROOT; };
-		E10000000000000000001044 /* ImageIO.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ImageIO.framework; path = System/Library/Frameworks/ImageIO.framework; sourceTree = SDKROOT; };
-		E10000000000000000001046 /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
+		E1000000000000000000101E /* ExportEncoder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExportEncoder.swift; sourceTree = "<group>"; };
+		E10000000000000000001020 /* FilmCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FilmCatalog.swift; sourceTree = "<group>"; };
+		E10000000000000000001022 /* FrameModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrameModels.swift; sourceTree = "<group>"; };
+		E10000000000000000001024 /* FramePainter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FramePainter.swift; sourceTree = "<group>"; };
+		E10000000000000000001026 /* FrameChrome.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrameChrome.swift; sourceTree = "<group>"; };
+		E10000000000000000001028 /* FrameSelfTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrameSelfTest.swift; sourceTree = "<group>"; };
+		E1000000000000000000102A /* WatermarkModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatermarkModels.swift; sourceTree = "<group>"; };
+		E1000000000000000000102C /* WatermarkPainter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatermarkPainter.swift; sourceTree = "<group>"; };
+		E1000000000000000000102E /* SelfTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelfTest.swift; sourceTree = "<group>"; };
+		E10000000000000000001039 /* SpektraFilm-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "SpektraFilm-Bridging-Header.h"; sourceTree = "<group>"; };
+		E10000000000000000001031 /* FilmCatalog.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = FilmCatalog.json; sourceTree = "<group>"; };
+		E10000000000000000001033 /* FrameCatalog.json */ = {isa = PBXFileReference; lastKnownFileType = text.json; path = FrameCatalog.json; sourceTree = "<group>"; };
+		E10000000000000000001035 /* SampleBars.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = SampleBars.png; sourceTree = "<group>"; };
+		E10000000000000000001037 /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
+		E10000000000000000001030 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		E1000000000000000000104F /* LiteFilm.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = LiteFilm.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		E1000000000000000000103A /* Metal.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Metal.framework; path = System/Library/Frameworks/Metal.framework; sourceTree = SDKROOT; };
+		E1000000000000000000103C /* QuartzCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = QuartzCore.framework; path = System/Library/Frameworks/QuartzCore.framework; sourceTree = SDKROOT; };
+		E1000000000000000000103E /* CoreText.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreText.framework; path = System/Library/Frameworks/CoreText.framework; sourceTree = SDKROOT; };
+		E10000000000000000001040 /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
+		E10000000000000000001042 /* Accelerate.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Accelerate.framework; path = System/Library/Frameworks/Accelerate.framework; sourceTree = SDKROOT; };
+		E10000000000000000001044 /* PhotosUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = PhotosUI.framework; path = System/Library/Frameworks/PhotosUI.framework; sourceTree = SDKROOT; };
+		E10000000000000000001046 /* ImageIO.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = ImageIO.framework; path = System/Library/Frameworks/ImageIO.framework; sourceTree = SDKROOT; };
+		E10000000000000000001048 /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		E1000000000000000000104B /* Frameworks */ = {
+		E1000000000000000000104D /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				E10000000000000000001039 /* Metal.framework in Frameworks */,
-				E1000000000000000000103B /* QuartzCore.framework in Frameworks */,
-				E1000000000000000000103D /* CoreText.framework in Frameworks */,
-				E1000000000000000000103F /* CoreGraphics.framework in Frameworks */,
-				E10000000000000000001041 /* Accelerate.framework in Frameworks */,
-				E10000000000000000001043 /* PhotosUI.framework in Frameworks */,
-				E10000000000000000001045 /* ImageIO.framework in Frameworks */,
-				E10000000000000000001047 /* UIKit.framework in Frameworks */,
+				E1000000000000000000103B /* Metal.framework in Frameworks */,
+				E1000000000000000000103D /* QuartzCore.framework in Frameworks */,
+				E1000000000000000000103F /* CoreText.framework in Frameworks */,
+				E10000000000000000001041 /* CoreGraphics.framework in Frameworks */,
+				E10000000000000000001043 /* Accelerate.framework in Frameworks */,
+				E10000000000000000001045 /* PhotosUI.framework in Frameworks */,
+				E10000000000000000001047 /* ImageIO.framework in Frameworks */,
+				E10000000000000000001049 /* UIKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		E10000000000000000001050 = {
+		E10000000000000000001052 = {
 			isa = PBXGroup;
 			children = (
-				E1000000000000000000104E /* SpektraFilm */,
-				E10000000000000000001051 /* Products */,
+				E10000000000000000001050 /* SpektraFilm */,
+				E10000000000000000001053 /* Products */,
 			);
 			sourceTree = "<group>";
 		};
-		E10000000000000000001051 /* Products */ = {
+		E10000000000000000001053 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				E1000000000000000000104D /* LiteFilm.app */,
+				E1000000000000000000104F /* LiteFilm.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
 		};
-		E1000000000000000000104E /* SpektraFilm */ = {
+		E10000000000000000001050 /* SpektraFilm */ = {
 			isa = PBXGroup;
 			children = (
 				E10000000000000000001000 /* SpektraFilmApp.swift */,
@@ -138,28 +140,29 @@
 				E10000000000000000001018 /* PhotoAdjustments.swift */,
 				E1000000000000000000101A /* AdjustmentSelfTest.swift */,
 				E1000000000000000000101C /* ImageCodec.swift */,
-				E1000000000000000000101E /* FilmCatalog.swift */,
-				E10000000000000000001020 /* FrameModels.swift */,
-				E10000000000000000001022 /* FramePainter.swift */,
-				E10000000000000000001024 /* FrameChrome.swift */,
-				E10000000000000000001026 /* FrameSelfTest.swift */,
-				E10000000000000000001028 /* WatermarkModels.swift */,
-				E1000000000000000000102A /* WatermarkPainter.swift */,
-				E1000000000000000000102C /* SelfTest.swift */,
-				E10000000000000000001037 /* SpektraFilm-Bridging-Header.h */,
-				E10000000000000000001035 /* LaunchScreen.storyboard */,
-				E1000000000000000000102E /* Assets.xcassets */,
-				E1000000000000000000104F /* Resources */,
+				E1000000000000000000101E /* ExportEncoder.swift */,
+				E10000000000000000001020 /* FilmCatalog.swift */,
+				E10000000000000000001022 /* FrameModels.swift */,
+				E10000000000000000001024 /* FramePainter.swift */,
+				E10000000000000000001026 /* FrameChrome.swift */,
+				E10000000000000000001028 /* FrameSelfTest.swift */,
+				E1000000000000000000102A /* WatermarkModels.swift */,
+				E1000000000000000000102C /* WatermarkPainter.swift */,
+				E1000000000000000000102E /* SelfTest.swift */,
+				E10000000000000000001039 /* SpektraFilm-Bridging-Header.h */,
+				E10000000000000000001037 /* LaunchScreen.storyboard */,
+				E10000000000000000001030 /* Assets.xcassets */,
+				E10000000000000000001051 /* Resources */,
 			);
 			path = SpektraFilm;
 			sourceTree = "<group>";
 		};
-		E1000000000000000000104F /* Resources */ = {
+		E10000000000000000001051 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
-				E1000000000000000000102F /* FilmCatalog.json */,
-				E10000000000000000001031 /* FrameCatalog.json */,
-				E10000000000000000001033 /* SampleBars.png */,
+				E10000000000000000001031 /* FilmCatalog.json */,
+				E10000000000000000001033 /* FrameCatalog.json */,
+				E10000000000000000001035 /* SampleBars.png */,
 			);
 			path = Resources;
 			sourceTree = "<group>";
@@ -169,13 +172,13 @@
 /* Begin PBXNativeTarget section */
 		E10000000000000000000002 /* SpektraFilm */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = E10000000000000000001054 /* Build configuration list for PBXNativeTarget "SpektraFilm" */;
+			buildConfigurationList = E10000000000000000001056 /* Build configuration list for PBXNativeTarget "SpektraFilm" */;
 			buildPhases = (
-				E10000000000000000001048 /* Compile SpektraLab engine */,
-				E1000000000000000000104A /* Sources */,
-				E1000000000000000000104B /* Frameworks */,
-				E1000000000000000000104C /* Resources */,
-				E10000000000000000001049 /* Bundle engine resources */,
+				E1000000000000000000104A /* Compile SpektraLab engine */,
+				E1000000000000000000104C /* Sources */,
+				E1000000000000000000104D /* Frameworks */,
+				E1000000000000000000104E /* Resources */,
+				E1000000000000000000104B /* Bundle engine resources */,
 			);
 			buildRules = (
 			);
@@ -183,15 +186,15 @@
 			);
 			name = SpektraFilm;
 			productName = SpektraFilm;
-			productReference = E1000000000000000000104D /* LiteFilm.app */;
+			productReference = E1000000000000000000104F /* LiteFilm.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
-		E10000000000000000001052 /* Project object */ = {
+		E10000000000000000001054 /* Project object */ = {
 			isa = PBXProject;
-			buildConfigurationList = E10000000000000000001053 /* Build configuration list for PBXProject "SpektraFilm" */;
+			buildConfigurationList = E10000000000000000001055 /* Build configuration list for PBXProject "SpektraFilm" */;
 			compatibilityVersion = "Xcode 15.0";
 			developmentRegion = "zh-Hans";
 			hasScannedForEncodings = 0;
@@ -200,8 +203,8 @@
 				"zh-Hans",
 				Base,
 			);
-			mainGroup = E10000000000000000001050;
-			productRefGroup = E10000000000000000001051 /* Products */;
+			mainGroup = E10000000000000000001052;
+			productRefGroup = E10000000000000000001053 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -211,22 +214,22 @@
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		E1000000000000000000104C /* Resources */ = {
+		E1000000000000000000104E /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				E10000000000000000001030 /* FilmCatalog.json in Resources */,
-				E10000000000000000001032 /* FrameCatalog.json in Resources */,
-				E10000000000000000001034 /* SampleBars.png in Resources */,
-				E10000000000000000001036 /* LaunchScreen.storyboard in Resources */,
-				E10000000000000000001059 /* Assets.xcassets in Resources */,
+				E10000000000000000001032 /* FilmCatalog.json in Resources */,
+				E10000000000000000001034 /* FrameCatalog.json in Resources */,
+				E10000000000000000001036 /* SampleBars.png in Resources */,
+				E10000000000000000001038 /* LaunchScreen.storyboard in Resources */,
+				E1000000000000000000105B /* Assets.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		E10000000000000000001048 /* Compile SpektraLab engine */ = {
+		E1000000000000000000104A /* Compile SpektraLab engine */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -240,7 +243,7 @@
 			shellPath = /bin/sh;
 			shellScript = "/usr/bin/python3 \"${SRCROOT}/Scripts/build_engine_ios.py\" compile\n";
 		};
-		E10000000000000000001049 /* Bundle engine resources */ = {
+		E1000000000000000000104B /* Bundle engine resources */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -257,7 +260,7 @@
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		E1000000000000000000104A /* Sources */ = {
+		E1000000000000000000104C /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -276,21 +279,22 @@
 				E10000000000000000001019 /* PhotoAdjustments.swift in Sources */,
 				E1000000000000000000101B /* AdjustmentSelfTest.swift in Sources */,
 				E1000000000000000000101D /* ImageCodec.swift in Sources */,
-				E1000000000000000000101F /* FilmCatalog.swift in Sources */,
-				E10000000000000000001021 /* FrameModels.swift in Sources */,
-				E10000000000000000001023 /* FramePainter.swift in Sources */,
-				E10000000000000000001025 /* FrameChrome.swift in Sources */,
-				E10000000000000000001027 /* FrameSelfTest.swift in Sources */,
-				E10000000000000000001029 /* WatermarkModels.swift in Sources */,
-				E1000000000000000000102B /* WatermarkPainter.swift in Sources */,
-				E1000000000000000000102D /* SelfTest.swift in Sources */,
+				E1000000000000000000101F /* ExportEncoder.swift in Sources */,
+				E10000000000000000001021 /* FilmCatalog.swift in Sources */,
+				E10000000000000000001023 /* FrameModels.swift in Sources */,
+				E10000000000000000001025 /* FramePainter.swift in Sources */,
+				E10000000000000000001027 /* FrameChrome.swift in Sources */,
+				E10000000000000000001029 /* FrameSelfTest.swift in Sources */,
+				E1000000000000000000102B /* WatermarkModels.swift in Sources */,
+				E1000000000000000000102D /* WatermarkPainter.swift in Sources */,
+				E1000000000000000000102F /* SelfTest.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
-		E10000000000000000001055 /* Debug */ = {
+		E10000000000000000001057 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -322,7 +326,7 @@
 			};
 			name = Debug;
 		};
-		E10000000000000000001056 /* Release */ = {
+		E10000000000000000001058 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -352,7 +356,7 @@
 			};
 			name = Release;
 		};
-		E10000000000000000001057 /* Debug */ = {
+		E10000000000000000001059 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = "AppIcon";
@@ -361,7 +365,7 @@
 				CODE_SIGNING_REQUIRED = YES;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = "Automatic";
-				CURRENT_PROJECT_VERSION = 5;
+				CURRENT_PROJECT_VERSION = 6;
 				DEVELOPMENT_TEAM = "267KQ4A3N4";
 				ENABLE_PREVIEWS = NO;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -391,7 +395,7 @@
 			};
 			name = Debug;
 		};
-		E10000000000000000001058 /* Release */ = {
+		E1000000000000000000105A /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = "AppIcon";
@@ -400,7 +404,7 @@
 				CODE_SIGNING_REQUIRED = YES;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = "Automatic";
-				CURRENT_PROJECT_VERSION = 5;
+				CURRENT_PROJECT_VERSION = 6;
 				DEVELOPMENT_TEAM = "267KQ4A3N4";
 				ENABLE_PREVIEWS = NO;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -433,16 +437,7 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		E10000000000000000001053 /* Build configuration list for PBXProject "SpektraFilm" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				E10000000000000000001055 /* Debug */,
-				E10000000000000000001056 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		E10000000000000000001054 /* Build configuration list for PBXNativeTarget "SpektraFilm" */ = {
+		E10000000000000000001055 /* Build configuration list for PBXProject "SpektraFilm" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
 				E10000000000000000001057 /* Debug */,
@@ -451,8 +446,17 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		E10000000000000000001056 /* Build configuration list for PBXNativeTarget "SpektraFilm" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E10000000000000000001059 /* Debug */,
+				E1000000000000000000105A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 /* End XCConfigurationList section */
 	};
-	rootObject = E10000000000000000001052 /* Project object */;
+	rootObject = E10000000000000000001054 /* Project object */;
 }
 

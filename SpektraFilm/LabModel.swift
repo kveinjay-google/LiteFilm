@@ -702,8 +702,9 @@ final class LabModel: ObservableObject {
 
     /// `includeFrame` and `includeWatermark` are the choices at the moment of the tap.
     /// Film, paper, exposure, frame, and watermark are copied before the export task starts.
-    func export(_ format: ExportFormat, includeFrame: Bool, includeWatermark: Bool) {
+    func export(_ format: ExportFormat, includeFrame: Bool, includeWatermark: Bool, maxBytes: Int? = nil) {
         guard started, let data = sourceData, !inFlight else { return }
+        shareURL = nil
         let params = currentParams()
         let edits = adjustments
         let enabled = frame.enabled
@@ -749,12 +750,14 @@ final class LabModel: ObservableObject {
                         request = nil
                     }
                     let image = LabModel.compose(photo: adjusted, frame: request, watermark: overlay) ?? adjusted
-                    let url = try ImageCodec.write(image, format: format)
-                    return (url, image.width, image.height, output.elapsedMS)
+                    let file = try ImageCodec.writeExport(image, format: format, maxBytes: maxBytes)
+                    return (file.url, file.width, file.height, file.bytes)
                 }.value
                 engineOpen = false
                 shareURL = rendered.0
-                status = "导出 \(rendered.1)×\(rendered.2) · \(Self.seconds(rendered.3))"
+                let size = ByteCountFormatter.string(fromByteCount: Int64(rendered.3), countStyle: .file)
+                status = "导出 \(rendered.1)×\(rendered.2) · \(size)"
+                flashNotice(status)
                 logLine("SPEKTRAFILM_EXPORT_OK \(rendered.1)x\(rendered.2) \(rendered.0.path)")
             } catch {
                 engineOpen = false

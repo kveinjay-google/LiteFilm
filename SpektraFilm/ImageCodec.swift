@@ -314,12 +314,26 @@ enum ImageCodec {
     }
 
     static func write(_ image: CGImage, format: ExportFormat) throws -> URL {
+        try writeExport(image, format: format, maxBytes: nil).url
+    }
+
+    static func writeExport(_ image: CGImage, format: ExportFormat, maxBytes: Int?) throws
+        -> (url: URL, width: Int, height: Int, bytes: Int) {
         let ext = format.utType.preferredFilenameExtension ?? format.rawValue
         let url = FileManager.default.temporaryDirectory
             .appendingPathComponent("LiteFilm-\(UUID().uuidString)")
             .appendingPathExtension(ext)
+        if let maxBytes {
+            let photo = try ExportEncoder.encode(image, type: format.utType, maxBytes: maxBytes)
+            guard photo.data.count <= maxBytes else {
+                throw CodecError.message("导出文件超出体积上限，请重试。")
+            }
+            try photo.data.write(to: url, options: .atomic)
+            return (url, photo.width, photo.height, photo.data.count)
+        }
         try write(image, format: format, to: url)
-        return url
+        let bytes = try url.resourceValues(forKeys: [.fileSizeKey]).fileSize ?? 0
+        return (url, image.width, image.height, bytes)
     }
 
     static func write(_ image: CGImage, format: ExportFormat, to url: URL) throws {

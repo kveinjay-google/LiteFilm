@@ -8,11 +8,18 @@ struct ObsidianExportSheet: View {
     @State private var format: ExportFormat = .jpeg
     @State private var proof: UIImage?
     @State private var request: ExportRequest?
+    @AppStorage("litefilm.export.limitEnabled") private var limitEnabled = false
+    @AppStorage("litefilm.export.limitKB") private var limitKB = "500"
+    @FocusState private var limitFocused: Bool
+
+    private var maxBytes: Int? { limitEnabled ? ExportSizeLimit.bytes(fromKB: limitKB) : nil }
+    private var invalidLimit: Bool { limitEnabled && maxBytes == nil }
 
     private struct ExportRequest {
         let format: ExportFormat
         let frame: Bool
         let watermark: Bool
+        let maxBytes: Int?
     }
 
     var body: some View {
@@ -60,6 +67,7 @@ struct ObsidianExportSheet: View {
                             }
                         }
                     }
+                    sizeLimitControls
                     VStack(spacing: 0) {
                         Toggle(isOn: frameBinding) {
                             optionLabel("携带相框", detail: model.frame.enabled ? model.frameBadge : "当前未使用相框")
@@ -86,7 +94,10 @@ struct ObsidianExportSheet: View {
             .background(Ink.void)
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 Button {
-                    request = ExportRequest(format: format, frame: model.exportIncludeFrame, watermark: model.exportIncludeWatermark)
+                    guard !invalidLimit else { return }
+                    limitFocused = false
+                    request = ExportRequest(format: format, frame: model.exportIncludeFrame,
+                                            watermark: model.exportIncludeWatermark, maxBytes: maxBytes)
                     dismiss()
                 } label: {
                     HStack(spacing: 10) {
@@ -97,10 +108,10 @@ struct ObsidianExportSheet: View {
                     .frame(maxWidth: .infinity, minHeight: 54)
                     .foregroundStyle(Ink.void)
                     .background(Ink.amber, in: RoundedRectangle(cornerRadius: 15))
-                    .opacity(model.busy || proof == nil ? 0.45 : 1)
+                    .opacity(model.busy || proof == nil || invalidLimit ? 0.45 : 1)
                 }
                 .buttonStyle(.plain)
-                .disabled(model.busy || proof == nil || request != nil)
+                .disabled(model.busy || proof == nil || request != nil || invalidLimit)
                 .padding(.horizontal, 24)
                 .padding(.vertical, 16)
                 .background(Ink.void)
@@ -110,6 +121,10 @@ struct ObsidianExportSheet: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("取消") { dismiss() }.foregroundStyle(Ink.mute)
+                }
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button("完成") { limitFocused = false }
                 }
             }
             .toolbarBackground(Ink.void, for: .navigationBar)
@@ -128,8 +143,44 @@ struct ObsidianExportSheet: View {
             // Begin only after this sheet has left, allowing the parent share sheet to present.
             guard let pending = request else { return }
             request = nil
-            model.export(pending.format, includeFrame: pending.frame, includeWatermark: pending.watermark)
+            model.export(pending.format, includeFrame: pending.frame,
+                         includeWatermark: pending.watermark, maxBytes: pending.maxBytes)
         }
+    }
+
+    private var sizeLimitControls: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Toggle("限制文件大小", isOn: $limitEnabled)
+                .font(.system(size: 16, weight: .medium))
+            if limitEnabled {
+                HStack(spacing: 12) {
+                    Text("不超过").foregroundStyle(Ink.mute)
+                    TextField("例如 500", text: $limitKB)
+                        .keyboardType(.numberPad)
+                        .focused($limitFocused)
+                        .multilineTextAlignment(.trailing)
+                        .font(.body.monospacedDigit())
+                        .padding(12)
+                        .background(Ink.surface, in: RoundedRectangle(cornerRadius: 10))
+                        .accessibilityLabel("文件大小上限，单位 KB")
+                    Text("KB")
+                }
+                HStack(spacing: 10) {
+                    ForEach([100, 500, 1000], id: \.self) { kb in
+                        Button("\(kb) KB") { limitKB = String(kb); limitFocused = false }
+                            .font(.caption.weight(.medium))
+                            .frame(maxWidth: .infinity, minHeight: 40)
+                            .background(Ink.surface, in: RoundedRectangle(cornerRadius: 8))
+                    }
+                }.buttonStyle(.plain)
+                Text(invalidLimit ? "请输入 1–1,000,000 之间的整数。" :
+                     (format == .png ? "PNG 会按需缩小尺寸，保留透明区域。1 KB = 1,000 字节。" :
+                      "优先压缩画质，必要时缩小尺寸。上限越小，清晰度越低。1 KB = 1,000 字节。"))
+                    .font(.footnote)
+                    .foregroundStyle(invalidLimit ? Ink.ember : Ink.mute)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }.tint(Ink.amber)
     }
 
     private func refreshProof() {

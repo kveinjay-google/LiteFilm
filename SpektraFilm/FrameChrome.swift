@@ -1059,6 +1059,12 @@ private struct FrameStage: UIViewRepresentable {
         }
 
         private func turnPage(on view: StageView, image: UIImage, move: FrameMove?) {
+            // UIKit's curl synthesizes an opaque backface/shadow across the aspect-fit
+            // image's empty bounds. Vertical swipes use a clean directional transition.
+            if move == .nextWatermark || move == .previousWatermark {
+                slideFade(on: view, image: image, move: move)
+                return
+            }
             guard view.window != nil,
                   view.imageView.bounds.width > 2,
                   view.imageView.bounds.height > 2,
@@ -1069,8 +1075,7 @@ private struct FrameStage: UIViewRepresentable {
                 return
             }
             let option = pageOption(move)
-            let curl = option == .transitionCurlUp || option == .transitionCurlDown
-            blend(on: view, image: image, option: option, duration: curl ? 0.68 : 0.56)
+            blend(on: view, image: image, option: option, duration: 0.56)
         }
 
         private func blend(on view: StageView, image: UIImage, option: UIView.AnimationOptions, duration: TimeInterval) {
@@ -1162,10 +1167,8 @@ private struct FrameStage: UIViewRepresentable {
 
         private func pageOption(_ move: FrameMove) -> UIView.AnimationOptions {
             switch move {
-            case .nextWatermark:
-                return .transitionCurlUp
-            case .previousWatermark:
-                return .transitionCurlDown
+            case .nextWatermark, .previousWatermark:
+                return .transitionCrossDissolve
             case .previousStyle, .previousFamily:
                 return .transitionFlipFromLeft
             case .nextStyle, .nextFamily:

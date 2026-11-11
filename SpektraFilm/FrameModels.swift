@@ -449,7 +449,7 @@ enum PreviewTransition: String, CaseIterable, Hashable, Sendable {
         case .dissolve:
             return "画面留在原地，当前一张淡出，下一张淡入。"
         case .pageTurn:
-            return "上下换水印时卷起一页，左右换相框时沿书脊翻转。"
+            return "左右换相框时沿书脊翻转，上下换水印时轻推淡入。"
         case .slideFade:
             return "两张交叠，只顺着滑动方向挪开很短一截。"
         case .settle:

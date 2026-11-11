@@ -32,6 +32,13 @@ struct AdjustmentControls: View {
         VStack(spacing: 10) {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 22) {
+                    Button { model.showCropEditor = true } label: {
+                        Label("裁剪与校正", systemImage: "crop.rotate")
+                            .font(.subheadline)
+                            .foregroundStyle(Ink.ivory)
+                            .frame(minHeight: 44)
+                    }
+                    .disabled(model.editingSourcePreview == nil || model.busy)
                     ForEach(ToneControl.allCases, id: \.self) { control in
                         Button { selected = control } label: {
                             Text(control.rawValue)
@@ -57,11 +64,6 @@ struct AdjustmentControls: View {
                     .tint(Ink.amber)
                     .accessibilityLabel(selected.rawValue)
                 HStack {
-                    Button { model.showCropEditor = true } label: {
-                        Label("裁剪与校正", systemImage: "crop.rotate")
-                            .frame(minHeight: 44)
-                    }
-                    .disabled(model.editingSourcePreview == nil || model.busy)
                     Spacer()
                     Button("重置\(selected.rawValue)") { value.wrappedValue = 0 }
                         .frame(minHeight: 44)

@@ -1,7 +1,7 @@
 import SwiftUI
 
 private enum EditorTool: String, CaseIterable {
-    case film = "胶片", adjust = "调整", frame = "相框", watermark = "水印"
+    case adjust = "调整", film = "胶片", frame = "相框", watermark = "水印"
     var icon: String {
         switch self {
         case .film: "film"
@@ -17,7 +17,7 @@ struct EditorControls: View {
     var panelHeight: CGFloat = 218
     var onOpenFrames: () -> Void
     var onEditIdentity: () -> Void
-    @State private var tool = EditorTool.film
+    @State private var tool = EditorTool.adjust
     @State private var papers = false
     @State private var familyID: String?
 

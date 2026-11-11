@@ -510,6 +510,10 @@ private struct FrameStage: UIViewRepresentable {
 
     func makeCoordinator() -> Coordinator { Coordinator() }
 
+    static func dismantleUIView(_ uiView: StageView, coordinator: Coordinator) {
+        coordinator.cancelPresentation()
+    }
+
     func makeUIView(context: Context) -> StageView {
         let view = StageView()
         view.backgroundColor = .clear
@@ -573,9 +577,11 @@ private struct FrameStage: UIViewRepresentable {
             if animate {
                 coordinator.swapImage(on: view, to: image, move: move)
             } else if coordinator.tracking {
+                view.clearPageTurn()
                 view.imageView.image = image
                 coordinator.awaitingSwap = false
             } else {
+                coordinator.cancelPresentation()
                 view.imageView.layer.removeAllAnimations()
                 view.imageView.image = image
                 coordinator.awaitingSwap = false
@@ -593,6 +599,19 @@ private struct FrameStage: UIViewRepresentable {
 
     final class StageView: UIView {
         let imageView = UIImageView()
+        var pageTurnHost: UIView?
+        var onPageTurnCleared: (() -> Void)?
+
+        func clearPageTurn() {
+            let previous = pageTurnHost
+            let completion = onPageTurnCleared
+            pageTurnHost = nil
+            onPageTurnCleared = nil
+            previous?.removeFromSuperview()
+            previous?.subviews.forEach { $0.layer.removeAllAnimations() }
+            imageView.isHidden = false
+            completion?()
+        }
 
         override init(frame: CGRect) {
             super.init(frame: frame)
@@ -610,6 +629,7 @@ private struct FrameStage: UIViewRepresentable {
         override func layoutSubviews() {
             super.layoutSubviews()
             let inset = bounds
+            if imageView.bounds.size != inset.size { clearPageTurn() }
             imageView.bounds = CGRect(origin: .zero, size: inset.size)
             imageView.center = CGPoint(x: bounds.midX, y: bounds.midY)
         }
@@ -658,6 +678,9 @@ private struct FrameStage: UIViewRepresentable {
         fileprivate var settleToken = UUID()
         private var swapToken = UUID()
         private let haptic = UIImpactFeedbackGenerator(style: .light)
+        #if DEBUG
+        var holdsPageForProbe = false
+        #endif
 
         func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
             guard gestureRecognizer === panRecognizer, zoom <= 1.04 else { return true }
@@ -903,7 +926,7 @@ private struct FrameStage: UIViewRepresentable {
         }
 
         /// Drops an in-flight fade or page turn and puts the latest still back, unmoved.
-        private func cancelPresentation() {
+        func cancelPresentation() {
             settleToken = UUID()
             swapToken = UUID()
             awaitingSwap = false
@@ -911,6 +934,7 @@ private struct FrameStage: UIViewRepresentable {
             alpha = 1
             stage?.imageView.layer.removeAllAnimations()
             guard let stage else { return }
+            stage.clearPageTurn()
             stage.imageView.image = shown
             apply(on: stage, animated: false)
         }
@@ -1028,6 +1052,8 @@ private struct FrameStage: UIViewRepresentable {
 
         func swapImage(on view: StageView, to image: UIImage?, move: FrameMove?) {
             guard let image else { return }
+            settleToken = UUID()
+            view.clearPageTurn()
             awaitingSwap = false
             armedMove = nil
             let style = transition.played(reduceMotion: reduceMotion)
@@ -1059,12 +1085,6 @@ private struct FrameStage: UIViewRepresentable {
         }
 
         private func turnPage(on view: StageView, image: UIImage, move: FrameMove?) {
-            // UIKit's curl synthesizes an opaque backface/shadow across the aspect-fit
-            // image's empty bounds. Vertical swipes use a clean directional transition.
-            if move == .nextWatermark || move == .previousWatermark {
-                slideFade(on: view, image: image, move: move)
-                return
-            }
             guard view.window != nil,
                   view.imageView.bounds.width > 2,
                   view.imageView.bounds.height > 2,
@@ -1075,7 +1095,64 @@ private struct FrameStage: UIViewRepresentable {
                 return
             }
             let option = pageOption(move)
-            blend(on: view, image: image, option: option, duration: 0.56)
+            if move == .nextWatermark || move == .previousWatermark {
+                curlPage(on: view, image: image, option: option)
+            } else {
+                blend(on: view, image: image, option: option, duration: 0.56)
+            }
+        }
+
+        private func curlPage(on view: StageView, image: UIImage, option: UIView.AnimationOptions) {
+            guard let outgoing = view.imageView.image, let fitted = fittedImageRect(in: view),
+                  fitted.width > 2, fitted.height > 2 else {
+                showInstant(on: view, image: image)
+                return
+            }
+            settling = true
+            let token = UUID()
+            settleToken = token
+            alpha = 1
+            view.imageView.layer.removeAllAnimations()
+            view.imageView.alpha = 1
+
+            // Curl must operate on the printed image, not the preview's transparent
+            // letterboxing. UIKit stretches its transition snapshot to the leaf bounds
+            // and generates a shadow/backface beyond them. A stable clipped parent
+            // contains those generated layers without removing the page curl itself.
+            let host = UIView(frame: fitted)
+            host.isUserInteractionEnabled = false
+            host.backgroundColor = .clear
+            host.clipsToBounds = true
+            let page = UIImageView(frame: host.bounds)
+            page.contentMode = .scaleAspectFit
+            page.image = outgoing
+            page.backgroundColor = .clear
+            host.addSubview(page)
+            view.imageView.addSubview(host)
+            view.pageTurnHost = host
+            view.onPageTurnCleared = { [weak self] in self?.finishSwap(token) }
+            // The target stays underneath, so cancellation or a layout change can
+            // remove the entire temporary curl hierarchy and reveal the latest still.
+            view.imageView.image = image
+            host.layoutIfNeeded()
+            // Commit the outgoing page before UIKit captures the transition snapshots.
+            // A newly inserted UIImageView otherwise has no rendered "before" surface.
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0 / 60.0) { [weak self, weak view, weak host] in
+                guard let self, let view, let host,
+                      self.settleToken == token, view.pageTurnHost === host else { return }
+                UIView.transition(with: page, duration: 0.68,
+                                  options: [option, .allowUserInteraction, .curveEaseInOut]) {
+                    page.image = image
+                } completion: { [weak self, weak view, weak host] _ in
+                    guard let self, let view, let host,
+                          self.settleToken == token, view.pageTurnHost === host else { return }
+                    #if DEBUG
+                    // The probe freezes the compositor while UIKit's callback clock runs.
+                    if self.holdsPageForProbe { return }
+                    #endif
+                    view.clearPageTurn()
+                }
+            }
         }
 
         private func blend(on view: StageView, image: UIImage, option: UIView.AnimationOptions, duration: TimeInterval) {
@@ -1167,8 +1244,10 @@ private struct FrameStage: UIViewRepresentable {
 
         private func pageOption(_ move: FrameMove) -> UIView.AnimationOptions {
             switch move {
-            case .nextWatermark, .previousWatermark:
-                return .transitionCrossDissolve
+            case .nextWatermark:
+                return .transitionCurlUp
+            case .previousWatermark:
+                return .transitionCurlDown
             case .previousStyle, .previousFamily:
                 return .transitionFlipFromLeft
             case .nextStyle, .nextFamily:
@@ -1265,3 +1344,142 @@ private func + (lhs: CGSize, rhs: CGSize) -> CGSize {
 private func size(of point: CGPoint) -> CGSize {
     CGSize(width: point.x, height: point.y)
 }
+
+#if DEBUG
+/// Deterministic compositor probe: no gesture timing, photo access or engine work needed.
+/// Record with simctl while this runs to inspect the real UIKit transition, not a mock.
+struct PreviewTransitionProbe: UIViewRepresentable {
+    func makeUIView(context: Context) -> UIView { ProbeHost() }
+    func updateUIView(_ uiView: UIView, context: Context) {}
+
+    private final class ProbeHost: UIView {
+        let stage = FrameStage.StageView()
+        let driver = FrameStage.Coordinator()
+        var started = false
+
+        override init(frame: CGRect) {
+            super.init(frame: frame)
+            backgroundColor = UIColor(white: 0.06, alpha: 1)
+            addSubview(stage)
+            driver.stage = stage
+            driver.transition = .pageTurn
+            driver.reduceMotion = CommandLine.arguments.contains("--probe-reduce-motion")
+            let image = makeImage(next: false)
+            stage.imageView.image = image
+            driver.shown = image
+        }
+        required init?(coder: NSCoder) { nil }
+
+        override func layoutSubviews() {
+            super.layoutSubviews()
+            stage.frame = CGRect(x: 28, y: 120, width: bounds.width - 56, height: 440)
+            stage.layoutIfNeeded()
+            guard !started, window != nil else { return }
+            started = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 2) { [weak self] in
+                self?.run()
+            }
+        }
+
+        private func run() {
+            if CommandLine.arguments.contains("--probe-lifecycle") {
+                verifyLifecycle()
+                return
+            }
+            let next = makeImage(next: true)
+            let down = CommandLine.arguments.contains("--probe-down")
+            let legacy = CommandLine.arguments.contains("--probe-legacy")
+            driver.holdsPageForProbe = CommandLine.arguments.contains { $0.hasPrefix("--probe-progress=") }
+            // Slow the compositor clock while retaining production animation curves.
+            let localTime = stage.layer.convertTime(CACurrentMediaTime(), from: nil)
+            stage.layer.speed = 0.15
+            stage.layer.timeOffset = localTime
+            stage.layer.beginTime = CACurrentMediaTime()
+            if legacy {
+                UIView.transition(with: stage.imageView, duration: 0.68,
+                    options: [down ? .transitionCurlDown : .transitionCurlUp, .curveEaseInOut]) {
+                    self.stage.imageView.image = next
+                }
+            } else {
+                driver.shown = next
+                driver.swapImage(on: stage, to: next, move: down ? .previousWatermark : .nextWatermark)
+            }
+            if let argument = CommandLine.arguments.first(where: { $0.hasPrefix("--probe-progress=") }),
+               let progress = Double(argument.split(separator: "=").last ?? ""),
+               progress.isFinite, (0...1).contains(progress) {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+                    guard let self else { return }
+                    self.stage.layer.speed = 0
+                    self.stage.layer.timeOffset = localTime + 0.68 * progress
+                }
+            }
+            logLine("LITEFILM_CURL_PROBE started legacy=\(legacy) down=\(down)")
+        }
+
+        private func verifyLifecycle() {
+            let next = makeImage(next: true)
+            driver.shown = next
+            driver.swapImage(on: stage, to: next, move: .nextWatermark)
+            check(stage.pageTurnHost != nil, "vertical page curl retained")
+            let host = stage.pageTurnHost!
+            check(host.clipsToBounds && host.bounds.height < stage.bounds.height,
+                  "landscape curl excludes preview letterboxing")
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) { [self] in
+                driver.cancelPresentation()
+                check(stage.pageTurnHost == nil && !driver.settling,
+                      "gesture interruption removes curl")
+                check(stage.imageView.image === next, "interruption preserves latest image")
+
+                driver.swapImage(on: stage, to: next, move: .previousWatermark)
+                stage.bounds.size.width -= 12
+                stage.setNeedsLayout()
+                stage.layoutIfNeeded()
+                check(stage.pageTurnHost == nil && !driver.settling, "resize clears curl and settlement")
+
+                driver.swapImage(on: stage, to: next, move: .nextWatermark)
+                driver.swapImage(on: stage, to: next, move: .previousWatermark)
+                check(stage.imageView.subviews.count == 1, "rapid swaps keep one temporary page")
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.85) { [self] in
+                    check(stage.pageTurnHost == nil && stage.imageView.subviews.isEmpty && !driver.settling,
+                          "completion removes all temporary content")
+                    driver.reduceMotion = true
+                    driver.swapImage(on: stage, to: next, move: .nextWatermark)
+                    check(stage.pageTurnHost == nil, "Reduce Motion skips curl")
+                    logLine("LITEFILM_CURL_LIFECYCLE_PASS")
+                    exit(0)
+                }
+            }
+        }
+
+        private func check(_ passed: Bool, _ message: String) {
+            if !passed {
+                logLine("LITEFILM_CURL_LIFECYCLE_FAIL \(message)")
+                exit(1)
+            }
+            logLine("LITEFILM_CURL_CHECK_PASS \(message)")
+        }
+
+        private func makeImage(next: Bool) -> UIImage {
+            let tall = CommandLine.arguments.contains("--probe-portrait")
+            let size = tall ? CGSize(width: 360, height: 600) : CGSize(width: 640, height: 360)
+            let format = UIGraphicsImageRendererFormat()
+            format.scale = 1
+            format.opaque = false
+            return UIGraphicsImageRenderer(size: size, format: format).image { context in
+                let colors: [UIColor] = next
+                    ? [.systemTeal, .systemBlue, .systemIndigo]
+                    : [.systemOrange, .systemPink, .systemPurple]
+                let inset: CGFloat = CommandLine.arguments.contains("--probe-alpha") ? 24 : 0
+                for (index, color) in colors.enumerated() {
+                    color.setFill()
+                    context.fill(CGRect(x: inset, y: inset + CGFloat(index) * (size.height - 2 * inset) / 3,
+                                        width: size.width - 2 * inset, height: (size.height - 2 * inset) / 3))
+                }
+                let text = next ? "NEXT  02" : "PAGE  01"
+                (text as NSString).draw(at: CGPoint(x: 40, y: size.height / 2 - 24),
+                    withAttributes: [.font: UIFont.boldSystemFont(ofSize: 40), .foregroundColor: UIColor.white])
+            }
+        }
+    }
+}
+#endif

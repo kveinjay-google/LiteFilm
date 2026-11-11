@@ -31,7 +31,7 @@ struct LaunchRootView: View {
     var body: some View {
         ZStack {
             LaunchColor.canvas.ignoresSafeArea()
-            ContentView()
+            labContent
                 .opacity(showLab ? 1 : 0)
                 .allowsHitTesting(showLab)
                 .accessibilityHidden(!showLab)
@@ -51,9 +51,22 @@ struct LaunchRootView: View {
         }
     }
 
+    @ViewBuilder private var labContent: some View {
+        #if DEBUG
+        if CommandLine.arguments.contains("--preview-transition-probe") {
+            PreviewTransitionProbe()
+        } else {
+            ContentView()
+        }
+        #else
+        ContentView()
+        #endif
+    }
+
     /// Self-tests exit from ContentView and should not wait on the brand plate.
     private static var skipsSplash: Bool {
         let args = CommandLine.arguments
         return args.contains("--self-test") || args.contains("--frame-self-test")
+            || args.contains("--preview-transition-probe")
     }
 }

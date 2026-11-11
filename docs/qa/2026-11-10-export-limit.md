@@ -9,6 +9,7 @@ Vertical preview paging previously used UIKit curl transitions, which introduce 
 - Native ImageIO regression passed for JPEG, PNG and HEIC at 500,000, 100,000 and 10,000 bytes. Also checked decoding, format, aspect ratio, no upscale, generous caps, invalid/impossible limits and PNG alpha after resampling.
 - Test-first baseline exceeded its 500,000-byte cap (590,074 bytes); implemented encoder passes. Final runner rerun passed after correcting its source path for case-sensitive checkouts.
 - Runner uses one compiler job, compilation timeout 90 seconds and execution timeout 60 seconds, with process-group thread watchdogs. Final measured peak was one thread in each sampled run.
+  - Subsequent watchdog audit found that this count omitted macOS continuation thread rows. The parser was corrected and tests rerun with peaks of 8 compiler threads and 5 test threads; see `2026-11-10-page-curl.md`.
 - Swift syntax checks, project plist lint and `git diff --check` passed.
 - Debug arm64 simulator and signed Release iPhone builds passed. Generic simulator initially requested both architectures, incompatible with the existing engine configuration; explicit arm64 build passed.
 - Simulator UI verified tab order, Crop & Correction entry, optional size controls, invalid zero disabling export, and successful system sharing. A 100 KB export produced a decodable 704×704 JPEG of **98,463 bytes**, including the selected frame/watermark.

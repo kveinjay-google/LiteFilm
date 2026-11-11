@@ -25,7 +25,9 @@ def run(command, log, timeout, thread_limit):
                     # macOS -M prints one row per thread and ignores normal -o formatting.
                     threads = subprocess.run(["ps", "-M", "-p", ",".join(members)],
                                              capture_output=True, text=True, timeout=5)
-                    count = sum(len(line.split()) > 1 and line.split()[1] in members
+                    # Continuation thread rows omit USER, so PID is then the first field.
+                    count = sum(bool(parts := line.split())
+                                and (parts[0] in members or (len(parts) > 1 and parts[1] in members))
                                 for line in threads.stdout.splitlines())
                 peak = max(peak, count)
                 if count > thread_limit or time.monotonic() > deadline:

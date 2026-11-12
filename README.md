@@ -4,7 +4,7 @@ LiteFilm 是基于 SpektraFilm / SpektraLab 的 iPhone 与 iPad 胶片照片编�
 
 [官网与帮助](https://www.superaitest.com/litefilm/) · [隐私政策](https://www.superaitest.com/litefilm/privacy.html)
 
-当前版本 0.1.0（build 11）：36 款相框、本地画廊、裁剪、精细调色、局部修饰、文字、水印、配方与批量导出。RAW/DNG 仅支持系统可解码格式，并非完整 RAW 显影流程。
+当前版本 0.1.0（build 12）：36 款相框、本地画廊、裁剪、精细调色、局部修饰、文字、水印、配方与批量导出。RAW/DNG 仅支持系统可解码格式，并非完整 RAW 显影流程。
 
 把 [spektrafilm](https://github.com/andreavolpato/spektrafilm) 的光谱胶片模拟做到 iPhone / iPad 上。渲染走 [SpektraLab](https://github.com/JamesQiu2005/SpektraLab) 的 C++ / Metal 引擎（`spk_engine.h` + `spektrafilm.metallib`），不是 LUT 套色，也不是把 Python 参考实现重写一遍。
 
@@ -48,6 +48,16 @@ xcodebuild -project SpektraFilm.xcodeproj -scheme SpektraFilm \
   -configuration Debug -derivedDataPath build/DerivedData \
   DEVELOPMENT_TEAM=YOUR_TEAM_ID -allowProvisioningUpdates build
 ```
+
+## 统一视觉与横屏工作台（build 12）
+
+- 新应用图标与启动标识：墨绿底色、香槟金胶片门与斜向光线；取消人为启动等待。
+- 统一首页、编辑器、导出、设置及各工具的配色、字重、按钮、缩略图和选中状态；照片保持完整比例。
+- 导出格式、尺寸与文件大小限制分组展示，保留原有输出规则。
+- 局部修饰横屏采用左图右工具；主编辑器使用稳定布局身份，旋转设备时保留当前工具和未应用的编辑草稿。
+- 保留五个底部工具、七个独立调整入口，以及画廊的双向居中浏览。
+
+验收与限制见 [build 12 记录](docs/qa/2026-11-12-commercial-polish.md)。
 
 ## 精细编辑与批量处理（build 10）
 

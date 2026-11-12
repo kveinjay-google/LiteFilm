@@ -16,17 +16,37 @@
                         <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
-                            <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="LaunchBackground" translatesAutoresizingMaskIntoConstraints="NO" id="bg-img-001">
-                                <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
-                            </imageView>
+                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="brand-group">
+                                <rect key="frame" x="96.5" y="358.5" width="200" height="135"/>
+                                <subviews>
+                                    <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" image="BrandIcon" translatesAutoresizingMaskIntoConstraints="NO" id="brand-img">
+                                        <rect key="frame" x="56" y="0" width="88" height="88"/>
+                                    </imageView>
+                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" text="LiteFilm" textAlignment="center" translatesAutoresizingMaskIntoConstraints="NO" id="brand-title">
+                                        <rect key="frame" x="0" y="106" width="200" height="29"/>
+                                        <fontDescription key="fontDescription" type="system" weight="semibold" pointSize="24"/>
+                                        <color key="textColor" red="0.960784" green="0.949020" blue="0.913725" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                    </label>
+                                </subviews>
+                                <constraints>
+                                    <constraint firstAttribute="width" constant="200" id="brand-width"/>
+                                    <constraint firstAttribute="height" constant="135" id="brand-height"/>
+                                    <constraint firstItem="brand-img" firstAttribute="centerX" secondItem="brand-group" secondAttribute="centerX" id="img-x"/>
+                                    <constraint firstItem="brand-img" firstAttribute="top" secondItem="brand-group" secondAttribute="top" id="img-y"/>
+                                    <constraint firstItem="brand-img" firstAttribute="width" constant="88" id="img-w"/>
+                                    <constraint firstItem="brand-img" firstAttribute="height" constant="88" id="img-h"/>
+                                    <constraint firstItem="brand-title" firstAttribute="top" secondItem="brand-img" secondAttribute="bottom" constant="18" id="title-y"/>
+                                    <constraint firstItem="brand-title" firstAttribute="leading" secondItem="brand-group" secondAttribute="leading" id="title-l"/>
+                                    <constraint firstItem="brand-title" firstAttribute="trailing" secondItem="brand-group" secondAttribute="trailing" id="title-r"/>
+                                    <constraint firstItem="brand-title" firstAttribute="height" constant="29" id="title-h"/>
+                                </constraints>
+                            </view>
                         </subviews>
                         <viewLayoutGuide key="safeArea" id="6Tk-OE-BBY"/>
                         <color key="backgroundColor" name="LaunchCanvas"/>
                         <constraints>
-                            <constraint firstItem="bg-img-001" firstAttribute="top" secondItem="Ze5-6b-2t3" secondAttribute="top" id="c-top"/>
-                            <constraint firstItem="bg-img-001" firstAttribute="bottom" secondItem="Ze5-6b-2t3" secondAttribute="bottom" id="c-bot"/>
-                            <constraint firstItem="bg-img-001" firstAttribute="leading" secondItem="Ze5-6b-2t3" secondAttribute="leading" id="c-lead"/>
-                            <constraint firstItem="bg-img-001" firstAttribute="trailing" secondItem="Ze5-6b-2t3" secondAttribute="trailing" id="c-trail"/>
+                            <constraint firstItem="brand-group" firstAttribute="centerX" secondItem="Ze5-6b-2t3" secondAttribute="centerX" id="brand-x"/>
+                            <constraint firstItem="brand-group" firstAttribute="centerY" secondItem="Ze5-6b-2t3" secondAttribute="centerY" id="brand-y"/>
                         </constraints>
                     </view>
                 </viewController>
@@ -36,9 +56,9 @@
         </scene>
     </scenes>
     <resources>
-        <image name="LaunchBackground" width="440" height="956"/>
+        <image name="BrandIcon" width="96" height="96"/>
         <namedColor name="LaunchCanvas">
-            <color red="0.023529411764705882" green="0.023529411764705882" blue="0.023529411764705882" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+            <color red="0.062745098" green="0.094117647" blue="0.086274510" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
         </namedColor>
     </resources>
 </document>

@@ -1,13 +1,13 @@
 import SwiftUI
 
 enum Ink {
-    static let void = Color(red: 11/255, green: 13/255, blue: 16/255)
-    static let surface = Color(red: 23/255, green: 26/255, blue: 30/255)
-    static let ivory = Color(red: 241/255, green: 242/255, blue: 241/255)
-    static let mute = Color(red: 152/255, green: 157/255, blue: 163/255)
-    static let amber = Color(red: 210/255, green: 223/255, blue: 130/255)
+    static let void = Color(red: 16/255, green: 24/255, blue: 22/255)
+    static let surface = Color(red: 26/255, green: 36/255, blue: 32/255)
+    static let ivory = Color(red: 245/255, green: 242/255, blue: 233/255)
+    static let mute = Color(red: 164/255, green: 175/255, blue: 166/255)
+    static let amber = Color(red: 222/255, green: 199/255, blue: 154/255)
     static let ember = Color(red: 1, green: 0.48, blue: 0.40)
-    static let hairline = Color.white.opacity(0.14)
+    static let hairline = Color.white.opacity(0.10)
 }
 
 /// Equal side reservations keep the wordmark centered on the screen, not between controls.
@@ -22,7 +22,7 @@ struct ObsidianHeader<Leading: View, Trailing: View>: View {
             leading().frame(width: 64, alignment: .leading)
             Text(title)
                 .font(.system(size: brand ? 21 : 18, weight: .semibold))
-                .tracking(brand ? 2.5 : 0)
+                .tracking(brand ? 0.4 : 0)
                 .lineLimit(1).minimumScaleFactor(0.8)
                 .frame(maxWidth: .infinity)
                 .accessibilityAddTraits(.isHeader)
@@ -49,8 +49,27 @@ struct ObsidianPrimaryButton: View {
             .font(.body.weight(.semibold))
             .frame(maxWidth: .infinity, minHeight: 52)
             .foregroundStyle(Ink.void)
-            .background(Ink.amber, in: RoundedRectangle(cornerRadius: 8))
+            .background(Ink.amber, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
         }
         .buttonStyle(.plain)
+    }
+}
+
+/// The same master artwork is used by the home-screen icon and the in-app identity.
+struct BrandMark: View {
+    var size: CGFloat = 64
+    var body: some View {
+        Image("BrandIcon").resizable().scaledToFit()
+            .frame(width: size, height: size)
+            .clipShape(RoundedRectangle(cornerRadius: size * 0.23, style: .continuous))
+            .accessibilityHidden(true)
+    }
+}
+
+struct StudioPanel: ViewModifier {
+    func body(content: Content) -> some View {
+        content.padding(16)
+            .background(Ink.surface, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(Ink.hairline, lineWidth: 0.5))
     }
 }

@@ -102,22 +102,29 @@ struct ContentView: View {
                         .frame(width: 44, height: 44)
                 }.accessibilityLabel(fullscreen ? "退出全屏" : "返回首页")
             } trailing: {
-                Button("导出") { showExport = true }
-                    .font(.body.weight(.medium)).frame(minWidth: 44, minHeight: 44)
-                    .disabled(model.preview == nil || model.busy)
+                Button { showExport = true } label: {
+                    Text("导出").font(.subheadline.weight(.semibold))
+                        .foregroundStyle(Ink.void)
+                        .frame(width: 58, height: 34)
+                        .background(Ink.amber, in: Capsule())
+                        .frame(minHeight: 44)
+                }
+                .opacity(model.preview == nil || model.busy ? 0.4 : 1)
+                .disabled(model.preview == nil || model.busy)
             }
             GeometryReader { geo in
                 if fullscreen {
                     preview
-                } else if geo.size.width > geo.size.height {
-                    HStack(spacing: 0) {
-                        preview
-                        controls(panelHeight: max(80, geo.size.height - 110)).frame(width: min(360, geo.size.width * 0.46))
-                    }
                 } else {
-                    VStack(spacing: 0) {
+                    let landscape = geo.size.width > geo.size.height
+                    // Keep EditorControls identity and presented drafts when the device rotates.
+                    let layout = landscape ? AnyLayout(HStackLayout(spacing: 0)) : AnyLayout(VStackLayout(spacing: 0))
+                    layout {
                         preview
-                        controls(panelHeight: min(218, max(130, geo.size.height - 310)))
+                        controls(panelHeight: landscape
+                            ? max(80, geo.size.height - 110)
+                            : min(218, max(130, geo.size.height - 310)))
+                            .frame(width: landscape ? min(360, geo.size.width * 0.46) : nil)
                     }
                 }
             }
@@ -286,9 +293,12 @@ struct AboutSheet: View {
 
     private var masthead: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("LiteFilm")
-                .font(.system(size: 36, weight: .medium, design: .default))
-                .foregroundStyle(Ink.ivory)
+            HStack(spacing: 16) {
+                BrandMark(size: 64)
+                Text("LiteFilm")
+                    .font(.system(size: 32, weight: .semibold))
+                    .foregroundStyle(Ink.ivory)
+            }
             Text("暗房感的胶片成像 · powered by spektrafilm")
                 .font(.system(.subheadline, design: .default))
                 .foregroundStyle(Ink.amber)

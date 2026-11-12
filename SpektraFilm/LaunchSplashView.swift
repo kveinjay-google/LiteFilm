@@ -1,18 +1,19 @@
 import SwiftUI
 
-/// Darkroom plate shown on the first frame. Same bitmap and canvas as
-/// LaunchScreen.storyboard, so the system launch image does not flash white
-/// or jump when SwiftUI takes over.
+/// Matches the compact system launch composition without delaying access to the library.
 struct LaunchSplashView: View {
     var body: some View {
         ZStack {
             LaunchColor.canvas.ignoresSafeArea()
-            Image("LaunchBackground")
-                .resizable()
-                .scaledToFit()
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .ignoresSafeArea()
-                .accessibilityHidden(true)
+            VStack(spacing: 18) {
+                Image("BrandIcon").resizable().scaledToFit().frame(width: 88, height: 88)
+                Text("LiteFilm")
+                    .font(.system(size: 24, weight: .semibold))
+                    .foregroundStyle(Ink.ivory)
+            }
+            .frame(height: 135)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .ignoresSafeArea()
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("LiteFilm")
@@ -20,8 +21,8 @@ struct LaunchSplashView: View {
 }
 
 enum LaunchColor {
-    /// Matches LaunchCanvas.colorset and the padded edge of the launch plate.
-    static let canvas = Color(red: 6.0 / 255.0, green: 6.0 / 255.0, blue: 6.0 / 255.0)
+    /// Matches LaunchCanvas.colorset.
+    static let canvas = Ink.void
 }
 
 struct LaunchRootView: View {
@@ -41,11 +42,11 @@ struct LaunchRootView: View {
                     .zIndex(1)
             }
         }
-        .animation(reduceMotion ? nil : .easeInOut(duration: 0.5), value: showLab)
+        .animation(reduceMotion ? nil : .easeOut(duration: 0.22), value: showLab)
         .task {
             guard !showLab else { return }
-            let hold: UInt64 = reduceMotion ? 450_000_000 : 1_150_000_000
-            try? await Task.sleep(nanoseconds: hold)
+            // Yield one frame for a seamless system-launch handoff, without an artificial wait.
+            await Task.yield()
             guard !Task.isCancelled else { return }
             showLab = true
         }
@@ -67,6 +68,6 @@ struct LaunchRootView: View {
     private static var skipsSplash: Bool {
         let args = CommandLine.arguments
         return args.contains("--text-self-test") || args.contains("--self-test") || args.contains("--frame-self-test")
-            || args.contains("--preview-transition-probe")
+            || args.contains("--preview-transition-probe") || args.contains("--editing-suite-self-test")
     }
 }

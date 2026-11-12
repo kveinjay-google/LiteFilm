@@ -29,9 +29,9 @@ struct ObsidianExportSheet: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 28) {
                     VStack(alignment: .leading, spacing: 8) {
-                        Text("完成这一张。")
+                        Text("保存你的作品")
                             .font(.system(size: 30, weight: .semibold))
-                        Text("确认画面，再带走你的作品。")
+                        Text("选择格式和尺寸，保留每一处创作细节。")
                             .font(.subheadline)
                             .foregroundStyle(Ink.mute)
                     }
@@ -40,7 +40,7 @@ struct ObsidianExportSheet: View {
                             .resizable()
                             .scaledToFit()
                             .frame(maxWidth: .infinity)
-                            .frame(maxHeight: 390)
+                            .frame(maxHeight: 280)
                             .accessibilityLabel("导出预览，包含文字以及当前选择的相框和水印")
                     } else {
                         VStack(spacing: 12) {
@@ -69,13 +69,24 @@ struct ObsidianExportSheet: View {
                             }
                         }
                     }
-                    Picker("最长边", selection: $maxLongEdge) {
-                        Text("原始尺寸（设备允许范围）").tag(0)
-                        Text("1280 像素").tag(1280)
-                        Text("2048 像素").tag(2048)
-                        Text("4096 像素").tag(4096)
-                    }.tint(Ink.amber)
-                    sizeLimitControls
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Text("最长边").font(.subheadline.weight(.medium))
+                            Spacer()
+                            Picker("最长边", selection: $maxLongEdge) {
+                                Text("原始尺寸").tag(0)
+                                Text("1280 像素").tag(1280)
+                                Text("2048 像素").tag(2048)
+                                Text("4096 像素").tag(4096)
+                            }.labelsHidden().tint(Ink.amber)
+                        }
+                        if maxLongEdge == 0 {
+                            Text("保留设备允许范围内的原始尺寸。")
+                                .font(.footnote).foregroundStyle(Ink.mute)
+                        }
+                    }.frame(maxWidth: .infinity, alignment: .leading)
+                        .modifier(StudioPanel())
+                    sizeLimitControls.modifier(StudioPanel())
                     VStack(spacing: 0) {
                         Toggle(isOn: frameBinding) {
                             optionLabel("携带相框", detail: model.frame.enabled ? model.frameBadge : "当前未使用相框")
@@ -90,6 +101,8 @@ struct ObsidianExportSheet: View {
                         .padding(.vertical, 16)
                     }
                     .tint(Ink.amber)
+                    .padding(.horizontal, 16)
+                    .background(Ink.surface, in: RoundedRectangle(cornerRadius: 18, style: .continuous))
                     Text("预览中的操作界面不会写入照片。导出完成后，可在系统分享菜单保存或分享。")
                         .font(.footnote)
                         .foregroundStyle(Ink.mute)
@@ -221,12 +234,13 @@ struct ObsidianSettingsSheet: View {
         NavigationStack {
             ScrollView {
                 VStack(alignment: .leading, spacing: 32) {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("你的创作习惯。")
-                            .font(.system(size: 30, weight: .semibold))
-                        Text("署名、浏览方式，以及关于 LiteFilm 的一切。")
-                            .font(.subheadline)
-                            .foregroundStyle(Ink.mute)
+                    HStack(spacing: 16) {
+                        BrandMark(size: 64)
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("LiteFilm").font(.system(size: 27, weight: .semibold))
+                            Text("让每一张照片，拥有自己的色彩。")
+                                .font(.subheadline).foregroundStyle(Ink.mute)
+                        }
                     }
                     settingsGroup("个人署名") {
                         NavigationLink {

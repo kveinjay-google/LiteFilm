@@ -61,89 +61,29 @@ struct RetouchEditor: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 12) {
-                HStack(spacing: 8) {
-                    ForEach(RetouchKind.allCases) { kind in
-                        Button {
-                            tool = kind; selectedID = nil
-                            choosingSource = kind == .repair && source == nil
-                        } label: {
-                            VStack(spacing: 5) {
-                                Image(systemName: kind.symbol)
-                                Text(kind.title).font(.caption)
-                            }
-                            .frame(maxWidth: .infinity, minHeight: 48)
-                            .background(tool == kind ? Ink.amber.opacity(0.18) : Ink.hairline, in: RoundedRectangle(cornerRadius: 10))
-                        }.foregroundStyle(tool == kind ? Ink.amber : Ink.ivory)
+            GeometryReader { geometry in
+                if geometry.size.width > geometry.size.height {
+                    HStack(spacing: 16) {
+                        preview.frame(maxWidth: .infinity, maxHeight: .infinity)
+                        VStack(spacing: 12) {
+                            modeStrip
+                            retouchHint
+                            retouchControls
+                        }
+                        .padding(.vertical, 12)
+                        .frame(width: min(340, geometry.size.width * 0.44))
+                        .background(Ink.surface)
                     }
-                }.padding(.horizontal, 16)
-                preview.frame(maxHeight: .infinity)
-                HStack {
-                    Text(hint).font(.caption).foregroundStyle(Ink.mute).frame(maxWidth: .infinity, alignment: .leading)
-                    if rendering { ProgressView().controlSize(.small).accessibilityLabel("正在更新预览") }
-                }.padding(.horizontal, 16)
-                ScrollView {
-                    VStack(spacing: 13) {
-                        HStack {
-                            Toggle("显示蒙版轮廓", isOn: $showOverlay).font(.caption)
-                            if tool == .repair {
-                                Button(choosingSource ? "正在选源点" : "重选源点") { choosingSource = true; selectedID = nil }
-                                    .font(.caption).buttonStyle(.bordered)
-                            }
-                        }
-                        if tool != .linear {
-                            control("大小", value: parameter(\.radius, fallback: $radius), range: 0.005...0.5, format: "%")
-                            control("羽化", value: parameter(\.feather, fallback: $feather), range: 0...1, format: "%")
-                        }
-                        if tool != .repair {
-                            control("曝光", value: parameter(\.exposure, fallback: $exposure), range: -2...2, format: "EV")
-                            control("饱和度", value: parameter(\.saturation, fallback: $saturation), range: -1...1, format: "%")
-                        } else {
-                            Text("将源区域像素柔和覆盖到目标，适合灰尘、小瑕疵和简单背景；复杂纹理可能需要重选源点。")
-                                .font(.caption).foregroundStyle(Ink.mute).frame(maxWidth: .infinity, alignment: .leading)
-                        }
-                        if let selected, !selected.points.isEmpty {
-                            DisclosureGroup("移动所选区域") {
-                                control("水平", value: position(\.x), range: 0...1, format: "%")
-                                control("垂直", value: position(\.y), range: 0...1, format: "%")
-                            }.font(.caption)
-                        }
-                        HStack {
-                            Text("图层 \(draft.layers.count)/\(RetouchEdits.maximumLayers)").font(.caption).foregroundStyle(Ink.mute)
-                            Spacer()
-                            Button("撤销") {
-                                if let previous = undoStack.popLast() { draft = previous; selectedID = nil }
-                            }.disabled(undoStack.isEmpty)
-                            Button("清空", role: .destructive) { remember(); draft = RetouchEdits(); selectedID = nil }
-                                .disabled(draft.isEmpty)
-                        }.font(.caption)
-                        ScrollView(.horizontal) {
-                            HStack {
-                                ForEach(Array(draft.layers.enumerated()), id: \.element.id) { index, layer in
-                                    HStack(spacing: 8) {
-                                        Button {
-                                            selectedID = layer.id; tool = layer.kind
-                                            radius = layer.radius; feather = layer.feather
-                                            exposure = layer.exposure; saturation = layer.saturation
-                                            if layer.kind == .repair { source = layer.source }
-                                        } label: {
-                                            Label("\(index + 1) · \(layer.kind.title)", systemImage: layer.kind.symbol)
-                                        }
-                                        Button(role: .destructive) {
-                                            remember(); draft.layers.removeAll { $0.id == layer.id }
-                                            if selectedID == layer.id { selectedID = nil }
-                                        } label: { Image(systemName: "xmark.circle.fill") }
-                                            .accessibilityLabel("删除第 \(index + 1) 个\(layer.kind.title)图层")
-                                    }.font(.caption).padding(10)
-                                        .background(selectedID == layer.id ? Ink.amber.opacity(0.18) : Ink.hairline, in: Capsule())
-                                }
-                            }
-                        }
-                        if let errorText { Text(errorText).font(.caption).foregroundStyle(.red) }
-                    }.padding(.horizontal, 16).padding(.bottom, 8)
-                }.frame(maxHeight: 285)
+                } else {
+                    VStack(spacing: 12) {
+                        modeStrip
+                        preview.frame(maxHeight: .infinity)
+                        retouchHint
+                        retouchControls.frame(maxHeight: min(285, geometry.size.height * 0.42))
+                    }.padding(.top, 8)
+                }
             }
-            .padding(.top, 8).background(Ink.void)
+            .background(Ink.void)
             .navigationTitle(tool == .repair ? "取样修复" : "局部调整").navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("取消") { dismiss() } }
@@ -166,6 +106,95 @@ struct RetouchEditor: View {
             catch { if !Task.isCancelled { errorText = error.localizedDescription; rendering = false } }
         }
     }
+
+    private var modeStrip: some View {
+        HStack(spacing: 8) {
+            ForEach(RetouchKind.allCases) { kind in
+                Button {
+                    tool = kind; selectedID = nil
+                    choosingSource = kind == .repair && source == nil
+                } label: {
+                    VStack(spacing: 5) {
+                        Image(systemName: kind.symbol)
+                        Text(kind.title).font(.caption)
+                    }
+                    .frame(maxWidth: .infinity, minHeight: 48)
+                    .background(tool == kind ? Ink.amber.opacity(0.18) : Ink.hairline, in: RoundedRectangle(cornerRadius: 10))
+                }.foregroundStyle(tool == kind ? Ink.amber : Ink.ivory)
+            }
+        }.padding(.horizontal, 16)
+    }
+
+    private var retouchHint: some View {
+        HStack {
+            Text(hint).font(.caption).foregroundStyle(Ink.mute).frame(maxWidth: .infinity, alignment: .leading)
+            if rendering { ProgressView().controlSize(.small).accessibilityLabel("正在更新预览") }
+        }.padding(.horizontal, 16)
+    }
+
+    private var retouchControls: some View {
+        ScrollView {
+            VStack(spacing: 13) {
+                HStack {
+                    Toggle("显示蒙版轮廓", isOn: $showOverlay).font(.caption)
+                    if tool == .repair {
+                        Button(choosingSource ? "正在选源点" : "重选源点") { choosingSource = true; selectedID = nil }
+                            .font(.caption).buttonStyle(.bordered)
+                    }
+                }
+                if tool != .linear {
+                    control("大小", value: parameter(\.radius, fallback: $radius), range: 0.005...0.5, format: "%")
+                    control("羽化", value: parameter(\.feather, fallback: $feather), range: 0...1, format: "%")
+                }
+                if tool != .repair {
+                    control("曝光", value: parameter(\.exposure, fallback: $exposure), range: -2...2, format: "EV")
+                    control("饱和度", value: parameter(\.saturation, fallback: $saturation), range: -1...1, format: "%")
+                } else {
+                    Text("将源区域像素柔和覆盖到目标，适合灰尘、小瑕疵和简单背景；复杂纹理可能需要重选源点。")
+                        .font(.caption).foregroundStyle(Ink.mute).frame(maxWidth: .infinity, alignment: .leading)
+                }
+                if let selected, !selected.points.isEmpty {
+                    DisclosureGroup("移动所选区域") {
+                        control("水平", value: position(\.x), range: 0...1, format: "%")
+                        control("垂直", value: position(\.y), range: 0...1, format: "%")
+                    }.font(.caption)
+                }
+                HStack {
+                    Text("图层 \(draft.layers.count)/\(RetouchEdits.maximumLayers)").font(.caption).foregroundStyle(Ink.mute)
+                    Spacer()
+                    Button("撤销") {
+                        if let previous = undoStack.popLast() { draft = previous; selectedID = nil }
+                    }.disabled(undoStack.isEmpty)
+                    Button("清空", role: .destructive) { remember(); draft = RetouchEdits(); selectedID = nil }
+                        .disabled(draft.isEmpty)
+                }.font(.caption)
+                ScrollView(.horizontal) {
+                    HStack {
+                        ForEach(Array(draft.layers.enumerated()), id: \.element.id) { index, layer in
+                            HStack(spacing: 8) {
+                                Button {
+                                    selectedID = layer.id; tool = layer.kind
+                                    radius = layer.radius; feather = layer.feather
+                                    exposure = layer.exposure; saturation = layer.saturation
+                                    if layer.kind == .repair { source = layer.source }
+                                } label: {
+                                    Label("\(index + 1) · \(layer.kind.title)", systemImage: layer.kind.symbol)
+                                }
+                                Button(role: .destructive) {
+                                    remember(); draft.layers.removeAll { $0.id == layer.id }
+                                    if selectedID == layer.id { selectedID = nil }
+                                } label: { Image(systemName: "xmark.circle.fill") }
+                                    .accessibilityLabel("删除第 \(index + 1) 个\(layer.kind.title)图层")
+                            }.font(.caption).padding(10)
+                                .background(selectedID == layer.id ? Ink.amber.opacity(0.18) : Ink.hairline, in: Capsule())
+                        }
+                    }
+                }
+                if let errorText { Text(errorText).font(.caption).foregroundStyle(.red) }
+            }.padding(.horizontal, 16).padding(.bottom, 8)
+        }
+    }
+
 
     private var preview: some View {
         GeometryReader { geometry in

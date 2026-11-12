@@ -42,6 +42,7 @@ struct EditorControls: View {
                 .padding(.vertical, tool == .adjust ? 8 : 12)
             }
             .frame(height: panelHeight)
+            .background(Ink.surface.opacity(0.52))
             Rectangle().fill(Ink.hairline).frame(height: 0.5)
             HStack(spacing: 0) {
                 ForEach(EditorTool.allCases, id: \.self) { item in
@@ -50,8 +51,14 @@ struct EditorControls: View {
                             Image(systemName: item.icon).font(.system(size: 22, weight: .regular))
                             Text(item.rawValue).font(.caption.weight(.medium))
                         }
-                        .foregroundStyle(tool == item ? Ink.amber : Ink.ivory)
+                        .foregroundStyle(tool == item ? Ink.amber : Ink.mute)
                         .frame(maxWidth: .infinity, minHeight: 65)
+                        .background {
+                            if tool == item {
+                                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                    .fill(Ink.amber.opacity(0.09)).padding(.horizontal, 5).padding(.vertical, 5)
+                            }
+                        }
                         .contentShape(Rectangle())
                     }
                     .accessibilityAddTraits(tool == item ? [.isSelected] : [])
@@ -239,8 +246,8 @@ struct EditorControls: View {
                 }
             }
                 .frame(width: 112, height: 72)
-                .background(Ink.surface, in: RoundedRectangle(cornerRadius: 5))
-                .overlay(RoundedRectangle(cornerRadius: 5).stroke(selected ? Ink.amber : Ink.hairline, lineWidth: selected ? 2 : 0.5))
+                .background(Ink.surface, in: RoundedRectangle(cornerRadius: 10))
+                .overlay(RoundedRectangle(cornerRadius: 10).stroke(selected ? Ink.amber : Ink.hairline, lineWidth: selected ? 2 : 0.5))
             Text(title).font(.caption).lineLimit(1)
         }.foregroundStyle(selected ? Ink.amber : Ink.ivory)
     }
@@ -268,8 +275,8 @@ struct EditorControls: View {
                 }
             }
             .frame(width: 96, height: 82)
-            .clipShape(RoundedRectangle(cornerRadius: 5))
-            .overlay(RoundedRectangle(cornerRadius: 5).stroke(selected ? Ink.amber : Ink.hairline, lineWidth: selected ? 2 : 0.5))
+            .clipShape(RoundedRectangle(cornerRadius: 10))
+            .overlay(RoundedRectangle(cornerRadius: 10).stroke(selected ? Ink.amber : Ink.hairline, lineWidth: selected ? 2 : 0.5))
             Text(title).font(.caption).lineLimit(captionHeight <= 16 ? 1 : 2)
                 .frame(width: 96, height: captionHeight, alignment: .topLeading)
                 .foregroundStyle(selected ? Ink.amber : Ink.ivory)

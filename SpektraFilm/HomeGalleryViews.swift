@@ -41,7 +41,7 @@ struct HomeColorChartView: View {
                     VStack(spacing: 18) {
                         HStack(alignment: .firstTextBaseline) {
                             Text("最近作品")
-                                .font(.headline)
+                                .font(.system(size: 24, weight: .semibold))
                                 .foregroundStyle(Ink.ivory)
                             Spacer()
                             Button(action: onOpenGallery) {
@@ -89,6 +89,10 @@ struct HomeColorChartView: View {
                 )
                     .frame(height: height)
                     .frame(maxWidth: .infinity)
+                    .background(Ink.surface)
+                    .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+                    .overlay(RoundedRectangle(cornerRadius: 18, style: .continuous).stroke(Ink.hairline, lineWidth: 0.5))
+                    .padding(.horizontal, 20)
                     .contentShape(Rectangle())
             }
             .disabled(model.busy)
@@ -120,9 +124,9 @@ struct HomeColorChartView: View {
                     Button { selectedID = item.id } label: {
                         CollectionPhoto(url: gallery.thumbURL(for: item), fallback: item.isVariant ? nil : gallery.originalURL(for: item))
                             .frame(width: 104, height: 104)
-                            .clipShape(RoundedRectangle(cornerRadius: 4))
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
                             .overlay {
-                                RoundedRectangle(cornerRadius: 4)
+                                RoundedRectangle(cornerRadius: 12)
                                     .stroke(selected?.id == item.id ? Ink.amber : Color.clear, lineWidth: 2)
                             }
                             .padding(2)
@@ -137,9 +141,7 @@ struct HomeColorChartView: View {
 
     private func emptyHome(height: CGFloat) -> some View {
         VStack(spacing: 22) {
-            Image(systemName: "camera.aperture")
-                .font(.system(size: 58, weight: .ultraLight))
-                .foregroundStyle(Ink.amber)
+            BrandMark(size: 88)
             VStack(spacing: 10) {
                 Text("让日常，留下胶片色彩")
                     .font(.title2.weight(.semibold))
@@ -172,7 +174,7 @@ struct HomeColorChartView: View {
                     .font(.headline)
                     .foregroundStyle(Ink.void)
                     .frame(maxWidth: .infinity, minHeight: 52)
-                    .background(Ink.amber, in: RoundedRectangle(cornerRadius: 8))
+                    .background(Ink.amber, in: RoundedRectangle(cornerRadius: 16))
             }
         }
         .disabled(model.busy)

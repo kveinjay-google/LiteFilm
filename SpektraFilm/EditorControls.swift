@@ -8,7 +8,7 @@ private enum EditorTool: String, CaseIterable {
         case .adjust: "slider.horizontal.3"
         case .frame: "square"
         case .watermark: "drop"
-        case .text: "textformat"
+        case .text: "text.badge.plus"
         }
     }
 }

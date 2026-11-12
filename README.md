@@ -49,6 +49,13 @@ xcodebuild -project SpektraFilm.xcodeproj -scheme SpektraFilm \
   DEVELOPMENT_TEAM=YOUR_TEAM_ID -allowProvisioningUpdates build
 ```
 
+## 相册与画廊（build 9）
+
+「全部作品」顶部可切换相册与画廊，默认保留相册，并记住上次选择。
+画廊以暖灰展墙、细边装裱与作品铭牌展示完整照片；竖屏向下浏览，宽屏支持双列，
+手机横屏切换为横向看展。点按继续编辑、长按菜单、最近筛选和多选删除均可使用。
+这只是浏览样式，不改变原照片或导出效果。文字工具改为独立的加号文字图标。
+
 ## 图片文字（build 8）
 
 底部「文字」可添加最多 8 段文字，每段最多 200 字，支持换行、拖动位置、

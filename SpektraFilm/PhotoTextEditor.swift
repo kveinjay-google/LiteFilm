@@ -22,7 +22,7 @@ struct PhotoTextPanel: View {
                 HStack {
                     Button { editing = layer } label: {
                         HStack {
-                            Image(systemName: "textformat")
+                            Image(systemName: "text.badge.plus")
                             Text(layer.text.replacingOccurrences(of: "\n", with: " ")).lineLimit(1)
                             Spacer()
                             Image(systemName: "chevron.right").font(.caption)

@@ -214,6 +214,7 @@ struct ImportGalleryView: View {
     @ObservedObject private var gallery: ImportGalleryStore
     @Binding var pickerItem: PhotosPickerItem?
     @AppStorage("litefilm.gallery.obsidianLayout") private var hangModeRaw = GalleryHangMode.grid.rawValue
+    @AppStorage("litefilm.gallery.presentation") private var presentationRaw = GalleryPresentation.album.rawValue
     @State private var editing = false
     @State private var selectedIDs: Set<String> = []
     @State private var pendingDelete: [GalleryItem] = []
@@ -226,6 +227,7 @@ struct ImportGalleryView: View {
         self._pickerItem = pickerItem
     }
 
+    private var presentation: GalleryPresentation { GalleryPresentation(rawValue: presentationRaw) ?? .album }
     private var hangMode: GalleryHangMode { GalleryHangMode(rawValue: hangModeRaw) ?? .grid }
     private var items: [GalleryItem] { recentOnly ? gallery.recent(limit: 12) : gallery.items }
 
@@ -249,10 +251,24 @@ struct ImportGalleryView: View {
                     .frame(minWidth: 44, minHeight: 44)
                     .disabled(gallery.items.isEmpty || model.busy)
                 }
-                collectionToolbar
+                if landscape {
+                    HStack(spacing: 0) {
+                        presentationPicker
+                        collectionToolbar
+                    }
+                } else {
+                    presentationPicker
+                    collectionToolbar
+                }
                 CollectionStatus(model: model)
                 if items.isEmpty {
                     emptyGallery
+                } else if presentation == .gallery {
+                    GalleryWallView(items: items, gallery: gallery, width: geo.size.width,
+                                    editing: editing, selectedIDs: selectedIDs, busy: model.busy,
+                                    activate: activate, open: { item in
+                                        Task { await model.openImport(id: item.id) }
+                                    }, delete: { pendingDelete = [$0] })
                 } else if hangMode == .single {
                     singleContent(height: max(120, geo.size.height - 250))
                 } else {
@@ -296,6 +312,27 @@ struct ImportGalleryView: View {
             return pendingDelete.first?.isVariant == true ? "删除这个保存方案？" : "删除这张导入照片？"
         }
         return "删除选中的 \(pendingDelete.count) 件作品？"
+    }
+
+    private var presentationPicker: some View {
+        HStack(spacing: 4) {
+            ForEach(GalleryPresentation.allCases) { mode in
+                Button { presentationRaw = mode.rawValue } label: {
+                    Label(mode.title, systemImage: mode.systemImage)
+                        .font(.subheadline.weight(.medium))
+                        .frame(maxWidth: .infinity, minHeight: 44)
+                        .foregroundStyle(presentation == mode ? Ink.void : Ink.mute)
+                        .background(presentation == mode ? Ink.ivory : .clear,
+                                    in: RoundedRectangle(cornerRadius: 8))
+                }
+                .accessibilityAddTraits(presentation == mode ? .isSelected : [])
+                .accessibilityIdentifier("gallery.presentation.\(mode.rawValue)")
+            }
+        }
+        .padding(4)
+        .background(Ink.surface, in: RoundedRectangle(cornerRadius: 12))
+        .padding(.horizontal, 20)
+        .padding(.vertical, 10)
     }
 
     private var collectionToolbar: some View {
@@ -445,19 +482,21 @@ struct ImportGalleryView: View {
     private var bottomBar: some View {
         HStack(spacing: 16) {
             Menu {
-                Picker("作品布局", selection: $hangModeRaw) {
-                    ForEach(GalleryHangMode.allCases) { mode in
-                        Label(mode.title, systemImage: mode.systemImage).tag(mode.rawValue)
+                if presentation == .album {
+                    Picker("相册布局", selection: $hangModeRaw) {
+                        ForEach(GalleryHangMode.allCases) { mode in
+                            Label(mode.title, systemImage: mode.systemImage).tag(mode.rawValue)
+                        }
                     }
                 }
                 Button("打开内置色卡", systemImage: "camera.filters") {
                     Task { await model.openSampleInEditor() }
                 }
             } label: {
-                Image(systemName: hangMode.systemImage).collectionIcon(color: Ink.amber)
+                Image(systemName: presentation == .album ? hangMode.systemImage : "ellipsis").collectionIcon(color: Ink.amber)
             }
             .disabled(model.busy)
-            .accessibilityLabel("作品布局与内置色卡")
+            .accessibilityLabel(presentation == .album ? "相册布局与内置色卡" : "更多作品操作")
             Rectangle().fill(Ink.hairline).frame(width: 1, height: 22)
             if editing {
                 Button(selectedIDs.count == items.count ? "取消全选" : "全选") {
@@ -606,7 +645,7 @@ private struct CollectionPhoto: View {
 }
 
 /// Serial actor limits decoding concurrency to one; the cost-bounded cache holds thumbnails only.
-private actor CollectionThumbnailLoader {
+actor CollectionThumbnailLoader {
     static let shared = CollectionThumbnailLoader()
     private let cache: NSCache<NSURL, UIImage> = {
         let cache = NSCache<NSURL, UIImage>()

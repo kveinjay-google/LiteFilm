@@ -117,7 +117,7 @@ struct CropEditor: View {
         HStack {
             Button("取消") { dismiss() }.frame(minWidth: 58, minHeight: 44)
             Spacer()
-            Text("裁剪与校正").font(.headline)
+            Text("裁剪").font(.headline)
             Spacer()
             Button("完成") {
                 model.applyGeometry(draft.sanitized())

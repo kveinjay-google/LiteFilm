@@ -11,6 +11,7 @@ struct GalleryRecipe: Codable, Equatable, Hashable, Sendable {
     var frame: FrameEditState
     var watermark: WatermarkEditState
     var adjustments: PhotoAdjustments? = nil
+    var textLayers: [PhotoTextLayer]? = nil
 }
 
 /// One sandbox gallery entry. Variants duplicate original bytes so deletes stay isolated.

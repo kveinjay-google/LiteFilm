@@ -33,7 +33,7 @@ struct AdjustmentControls: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 22) {
                     Button { model.showCropEditor = true } label: {
-                        Label("裁剪与校正", systemImage: "crop.rotate")
+                        Label("裁剪", systemImage: "crop.rotate")
                             .font(.subheadline)
                             .foregroundStyle(Ink.ivory)
                             .frame(minHeight: 44)

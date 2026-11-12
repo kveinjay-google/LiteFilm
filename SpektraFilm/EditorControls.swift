@@ -1,13 +1,14 @@
 import SwiftUI
 
 private enum EditorTool: String, CaseIterable {
-    case adjust = "调整", film = "胶片", frame = "相框", watermark = "水印"
+    case adjust = "调整", film = "胶片", frame = "相框", text = "文字", watermark = "水印"
     var icon: String {
         switch self {
         case .film: "film"
         case .adjust: "slider.horizontal.3"
         case .frame: "square"
         case .watermark: "drop"
+        case .text: "textformat"
         }
     }
 }
@@ -35,6 +36,7 @@ struct EditorControls: View {
                     case .adjust: AdjustmentControls(model: model)
                     case .frame: framePanel
                     case .watermark: watermarkPanel
+                    case .text: PhotoTextPanel(model: model)
                     }
                 }
                 .padding(.vertical, 12)

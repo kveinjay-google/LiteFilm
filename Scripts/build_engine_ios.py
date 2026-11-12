@@ -199,6 +199,13 @@ def bundle_resources() -> None:
     if not app.is_dir():
         app.mkdir(parents=True)
     shutil.copy2(ROOT / "SpektraFilm" / "PrivacyInfo.xcprivacy", app / "PrivacyInfo.xcprivacy")
+    font_dir = ROOT / "SpektraFilm/Resources/Fonts"
+    font_manifest = json.loads((font_dir / "SOURCES.json").read_text())
+    for item in font_manifest:
+        source = (LICENSES if item["file"].endswith(".txt") else font_dir) / item["file"]
+        if hashlib.sha256(source.read_bytes()).hexdigest() != item["sha256"]:
+            sys.exit(f"bundle: font/license checksum mismatch: {source.name}")
+    shutil.copytree(font_dir, app / "Fonts", dirs_exist_ok=True)
     destination = app / "engine"
     if destination.exists():
         shutil.rmtree(destination)

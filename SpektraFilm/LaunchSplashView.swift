@@ -66,7 +66,7 @@ struct LaunchRootView: View {
     /// Self-tests exit from ContentView and should not wait on the brand plate.
     private static var skipsSplash: Bool {
         let args = CommandLine.arguments
-        return args.contains("--self-test") || args.contains("--frame-self-test")
+        return args.contains("--text-self-test") || args.contains("--self-test") || args.contains("--frame-self-test")
             || args.contains("--preview-transition-probe")
     }
 }

@@ -63,7 +63,7 @@ enum WatermarkPainter {
         return image.cgImage
     }
 
-    private static func composite(base: CGImage, overlay: CGImage) -> CGImage? {
+    static func composite(base: CGImage, overlay: CGImage) -> CGImage? {
         let width = base.width
         let height = base.height
         let bits = base.bitsPerComponent >= 16 ? 16 : 8

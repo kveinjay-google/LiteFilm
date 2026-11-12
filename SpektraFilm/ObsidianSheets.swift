@@ -39,7 +39,7 @@ struct ObsidianExportSheet: View {
                             .scaledToFit()
                             .frame(maxWidth: .infinity)
                             .frame(maxHeight: 390)
-                            .accessibilityLabel("导出预览，包含当前选择的相框和水印")
+                            .accessibilityLabel("导出预览，包含文字以及当前选择的相框和水印")
                     } else {
                         VStack(spacing: 12) {
                             ProgressView().tint(Ink.amber)

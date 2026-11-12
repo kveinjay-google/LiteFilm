@@ -408,6 +408,7 @@ struct PersistedEdit: Codable {
     /// Sandbox gallery id for the last imported working photo. Nil / missing = color chart.
     var sourceImportID: String?
     var adjustments: PhotoAdjustments?
+    var textLayers: [PhotoTextLayer]? = nil
 }
 
 /// One preference for both horizontal frame changes and vertical watermark changes.

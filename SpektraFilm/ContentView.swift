@@ -39,6 +39,10 @@ struct ContentView: View {
         .preferredColorScheme(.dark)
         .tint(Ink.amber)
         .task {
+            if CommandLine.arguments.contains("--text-self-test") {
+                do { try await PhotoTextSelfTest.run(); exit(0) }
+                catch { logLine("LITEFILM_TEXT_SELFTEST_FAIL \(error)"); exit(1) }
+            }
             if CommandLine.arguments.contains("--self-test") {
                 let code = await Task.detached(priority: .userInitiated) { SelfTest.run() }.value
                 logLine("SPEKTRAFILM_SELFTEST_EXIT \(code)")
@@ -238,6 +242,12 @@ struct AboutSheet: View {
             }
             if let text = try? String(contentsOf: url, encoding: .utf8), !text.isEmpty {
                 credits = text
+                for name in ["NotoSans-OFL", "NotoSerif-OFL", "LXGWWenKai-OFL"] {
+                    if let file = Bundle.main.url(forResource: name, withExtension: "txt", subdirectory: "Licenses"),
+                       let license = try? String(contentsOf: file, encoding: .utf8) {
+                        credits += "\n\n" + name + "\n" + license
+                    }
+                }
             } else {
                 creditsFailed = true
             }

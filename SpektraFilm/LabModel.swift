@@ -11,6 +11,7 @@ struct EditSnapshot: Equatable {
     var frame: FrameEditState
     var watermark: WatermarkEditState
     var adjustments: PhotoAdjustments
+    var textLayers: [PhotoTextLayer]
 }
 
 @MainActor
@@ -38,6 +39,7 @@ final class LabModel: ObservableObject {
     @Published var frame = FrameEditState()
     @Published var watermarkCatalog = WatermarkCatalog.builtin
     @Published var watermark = WatermarkEditState()
+    @Published private(set) var textLayers: [PhotoTextLayer] = []
     @Published var exportIncludeFrame = true
     @Published var exportIncludeWatermark = true
     @Published var previewTransition: PreviewTransition = .dissolve
@@ -226,9 +228,11 @@ final class LabModel: ObservableObject {
             let title = info.isRaw ? "RAW 照片" : "照片"
             let saved = try gallery.importPhoto(data: data, title: title)
             let previousAdjustments = adjustments
+            let previousText = textLayers
+            textLayers = []
             adjustments = PhotoAdjustments()
             do { try await use(data: data, title: saved.title, importID: saved.id) }
-            catch { adjustments = previousAdjustments; throw error }
+            catch { adjustments = previousAdjustments; textLayers = previousText; throw error }
             stage = .editor
             persist()
             if info.isRaw {
@@ -266,9 +270,10 @@ final class LabModel: ObservableObject {
             flushPending()
             await waitUntilSettled()
             let previous = adjustments
-            if sourceImportID != nil { adjustments = PhotoAdjustments() }
+            let previousText = textLayers
+            if sourceImportID != nil { adjustments = PhotoAdjustments(); textLayers = [] }
             do { try await use(data: data, title: "内置色卡", importID: nil) }
-            catch { adjustments = previous; throw error }
+            catch { adjustments = previous; textLayers = previousText; throw error }
             persist()
         } catch {
             errorText = error.localizedDescription
@@ -308,6 +313,7 @@ final class LabModel: ObservableObject {
             if let recipe = item.recipe {
                 applyRecipe(recipe)
             } else if sourceImportID != item.id {
+                textLayers = []
                 adjustments = PhotoAdjustments()
             }
             try await use(data: data, title: item.title, importID: item.id)
@@ -320,6 +326,7 @@ final class LabModel: ObservableObject {
             exposureEV = previous.exposureEV
             frame = previous.frame
             watermark = previous.watermark
+            textLayers = previous.textLayers
             adjustments = previous.adjustments
             errorText = error.localizedDescription
             logLine("SPEKTRAFILM_IMPORT_FAIL \(error.localizedDescription)")
@@ -355,7 +362,8 @@ final class LabModel: ObservableObject {
             exposureEV: exposureEV,
             frame: frame,
             watermark: watermark,
-            adjustments: adjustments
+            adjustments: adjustments,
+            textLayers: textLayers
         )
         let thumb: Data? = {
             guard let preview else { return nil }
@@ -707,6 +715,7 @@ final class LabModel: ObservableObject {
         shareURL = nil
         let params = currentParams()
         let edits = adjustments
+        let text = textLayers
         let enabled = frame.enabled
         let preset = frameCatalog.frame(frame.activeFrameId)
         let catalog = frameCatalog
@@ -749,7 +758,7 @@ final class LabModel: ObservableObject {
                     } else {
                         request = nil
                     }
-                    let image = LabModel.compose(photo: adjusted, frame: request, watermark: overlay) ?? adjusted
+                    let image = LabModel.compose(photo: adjusted, frame: request, watermark: overlay, text: text) ?? adjusted
                     let file = try ImageCodec.writeExport(image, format: format, maxBytes: maxBytes)
                     return (file.url, file.width, file.height, file.bytes)
                 }.value
@@ -1092,6 +1101,17 @@ final class LabModel: ObservableObject {
     }
 
     /// Frame, ratio, and mat changes reuse `processed`. Only film, paper, and exposure reopen the engine.
+    func setTextLayers(_ layers: [PhotoTextLayer]) {
+        flushPending()
+        let next = PhotoTextLayer.sanitized(layers)
+        guard next != textLayers else { return }
+        let before = snapshot()
+        textLayers = next
+        pushUndo(before)
+        persist()
+        refreshAppearance()
+    }
+
     private func refreshAppearance() {
         guard started, sourceData != nil else { return }
         if processed != nil, processedKey == currentParams(), processedAdjustments == adjustments {
@@ -1216,12 +1236,13 @@ final class LabModel: ObservableObject {
         let photo = processed
         let request = makePaint(photo, bits: 8, opaque: false)
         let overlay = watermarkDraw()
-        if request == nil && overlay == nil {
+        let text = textLayers
+        if request == nil && overlay == nil && text.isEmpty {
             preview = UIImage(cgImage: photo)
             return
         }
         let image = await Task.detached(priority: .userInitiated) {
-            LabModel.compose(photo: photo, frame: request, watermark: overlay)
+            LabModel.compose(photo: photo, frame: request, watermark: overlay, text: text)
         }.value
         guard token == frameToken else {
             logLine("SPEKTRAFILM_FRAME_STALE_DROP token=\(token)")
@@ -1233,11 +1254,31 @@ final class LabModel: ObservableObject {
     }
 
     /// Still used by the self-test for the four export combinations. Same painter path as `export`.
-    func proofStill(includeFrame: Bool, includeWatermark: Bool) -> CGImage? {
+    func proofStill(includeFrame: Bool, includeWatermark: Bool, textOverride: [PhotoTextLayer]? = nil) -> CGImage? {
         guard let processed else { return nil }
         let request: PaintRequest? = includeFrame ? makePaint(processed, bits: 8, opaque: false) : nil
         let overlay: WatermarkDraw? = includeWatermark ? watermarkDraw() : nil
-        return LabModel.compose(photo: processed, frame: request, watermark: overlay)
+        return LabModel.compose(photo: processed, frame: request, watermark: overlay, text: textOverride ?? textLayers)
+    }
+
+    /// Cache the frame once for a text editing session; dragging only paints a
+    /// bounded 720px surface, never reruns the engine or a full-size frame.
+    func makeTextEditingSurface() -> PhotoTextSurface? {
+        guard let processed else { return nil }
+        let request = makePaint(processed, bits: 8, opaque: false)
+        guard let base = Self.compose(photo: processed, frame: request, watermark: nil) else { return nil }
+        let bounds = CGRect(x: 0, y: 0, width: base.width, height: base.height)
+        let area = request.flatMap { FramePainter.layout(for: $0)?.photo } ?? bounds
+        let scale = min(1, 720 / max(bounds.width, bounds.height))
+        let size = CGSize(width: bounds.width * scale, height: bounds.height * scale)
+        let format = UIGraphicsImageRendererFormat(); format.scale = 1; format.opaque = false
+        guard let small = UIGraphicsImageRenderer(size: size, format: format).image(actions: { _ in
+            UIImage(cgImage: base).draw(in: CGRect(origin: .zero, size: size))
+        }).cgImage else { return nil }
+        let sx = CGFloat(small.width) / bounds.width, sy = CGFloat(small.height) / bounds.height
+        return PhotoTextSurface(base: small,
+            area: CGRect(x: area.minX * sx, y: area.minY * sy, width: area.width * sx, height: area.height * sy),
+            watermark: watermarkDraw())
     }
 
     private func watermarkDraw() -> WatermarkDraw? {
@@ -1289,7 +1330,7 @@ final class LabModel: ObservableObject {
         return CGRect(x: 0, y: 0, width: preview.width, height: preview.height)
     }
 
-    nonisolated static func compose(photo: CGImage, frame: PaintRequest?, watermark: WatermarkDraw?) -> CGImage? {
+    nonisolated static func compose(photo: CGImage, frame: PaintRequest?, watermark: WatermarkDraw?, text: [PhotoTextLayer] = []) -> CGImage? {
         var image = photo
         var photoRect: CGRect?
         if let frame {
@@ -1298,6 +1339,7 @@ final class LabModel: ObservableObject {
                 image = painted
             }
         }
+        image = PhotoTextPainter.apply(image, layers: text, contentRect: photoRect) ?? image
         if let watermark {
             let rect = watermark.contentRect ?? photoRect
             if let marked = WatermarkPainter.apply(
@@ -1408,6 +1450,7 @@ final class LabModel: ObservableObject {
         var nextMark = recipe.watermark
         nextMark.sanitize(catalog: watermarkCatalog)
         watermark = nextMark
+        textLayers = PhotoTextLayer.sanitized(recipe.textLayers ?? [])
         adjustments = (recipe.adjustments ?? PhotoAdjustments()).sanitized()
         pendingFilm = nil
         pendingPaper = nil
@@ -1429,7 +1472,7 @@ final class LabModel: ObservableObject {
     }
 
     private func snapshot() -> EditSnapshot {
-        EditSnapshot(filmID: filmID, paperID: paperID, exposureEV: exposureEV, frame: frame, watermark: watermark, adjustments: adjustments)
+        EditSnapshot(filmID: filmID, paperID: paperID, exposureEV: exposureEV, frame: frame, watermark: watermark, adjustments: adjustments, textLayers: textLayers)
     }
 
     private func pushUndo(_ previous: EditSnapshot) {
@@ -1455,6 +1498,7 @@ final class LabModel: ObservableObject {
         exposureEV = previous.exposureEV
         frame = previous.frame
         watermark = previous.watermark
+        textLayers = previous.textLayers
         adjustments = previous.adjustments
         if recordInverse { pushUndo(current) }
         persist()
@@ -1478,7 +1522,7 @@ final class LabModel: ObservableObject {
     private func persist() {
         guard persistEnabled else { return }
         let payload = PersistedEdit(
-            schemaVersion: 6,
+            schemaVersion: 7,
             filmID: filmID,
             paperID: paperID,
             exposureEV: exposureEV,
@@ -1488,7 +1532,8 @@ final class LabModel: ObservableObject {
             exportIncludeWatermark: exportIncludeWatermark,
             previewTransition: previewTransition.rawValue,
             sourceImportID: sourceImportID,
-            adjustments: adjustments
+            adjustments: adjustments,
+            textLayers: textLayers
         )
         guard let data = try? JSONEncoder().encode(payload) else { return }
         defaults.set(data, forKey: Self.persistKey)
@@ -1516,6 +1561,7 @@ final class LabModel: ObservableObject {
             savedMark.sanitize(catalog: watermarkCatalog)
             watermark = savedMark
         }
+        textLayers = PhotoTextLayer.sanitized(saved.textLayers ?? [])
         adjustments = (saved.adjustments ?? PhotoAdjustments()).sanitized()
         if let includeFrame = saved.exportIncludeFrame { exportIncludeFrame = includeFrame }
         if let includeWatermark = saved.exportIncludeWatermark { exportIncludeWatermark = includeWatermark }

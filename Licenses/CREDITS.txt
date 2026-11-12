@@ -24,3 +24,21 @@ See metal-cpp-Apache-2.0.txt.
 
 This iOS application is a derivative work of the SpektraLab engine.
 It is distributed under the GNU General Public License, version 3 or later.
+
+Bundled, unmodified photo text fonts — SIL Open Font License 1.1:
+
+LXGW WenKai
+Copyright 2021-2026 LXGW (https://github.com/lxgw/LxgwWenKai), with Reserved Font Name '霞鹜', '霞鶩', '落霞孤鹜', '落霞孤鶩' and 'LXGW'.
+Copyright 2020 The Klee Project Authors (https://github.com/fontworks-fonts/Klee)
+
+Noto Sans CJK SC
+© 2014-2021 Adobe (http://www.adobe.com/).
+
+Noto Serif CJK SC
+© 2017-2024 Adobe (http://www.adobe.com/).
+
+Noto CJK: https://github.com/notofonts/noto-cjk
+LXGW WenKai v1.530: https://github.com/lxgw/LxgwWenKai
+Full font license texts: NotoSans-OFL.txt, NotoSerif-OFL.txt, LXGWWenKai-OFL.txt.
+These fonts remain under SIL OFL 1.1, independently of the application GPL license.
+Commercial use and embedding are permitted under OFL; fonts may not be sold alone.

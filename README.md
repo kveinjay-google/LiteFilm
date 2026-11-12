@@ -4,7 +4,7 @@ LiteFilm 是基于 SpektraFilm / SpektraLab 的 iPhone 与 iPad 胶片照片编�
 
 [官网与帮助](https://www.superaitest.com/litefilm/) · [隐私政策](https://www.superaitest.com/litefilm/privacy.html)
 
-当前版本 0.1.0：36 款相框、本地画廊、水印、JPEG / PNG / HEIC 导出。RAW/DNG 仅支持系统可解码格式，并非完整 RAW 显影流程。
+当前版本 0.1.0：36 款相框、本地画廊、裁剪与照片调整、文字、水印、JPEG / PNG / HEIC 导出。RAW/DNG 仅支持系统可解码格式，并非完整 RAW 显影流程。
 
 把 [spektrafilm](https://github.com/andreavolpato/spektrafilm) 的光谱胶片模拟做到 iPhone / iPad 上。渲染走 [SpektraLab](https://github.com/JamesQiu2005/SpektraLab) 的 C++ / Metal 引擎（`spk_engine.h` + `spektrafilm.metallib`），不是 LUT 套色，也不是把 Python 参考实现重写一遍。
 
@@ -47,6 +47,23 @@ xcodebuild -project SpektraFilm.xcodeproj -scheme SpektraFilm \
   -destination 'generic/platform=iOS' -jobs 4 \
   -configuration Debug -derivedDataPath build/DerivedData \
   DEVELOPMENT_TEAM=YOUR_TEAM_ID -allowProvisioningUpdates build
+```
+
+## 图片文字（build 8）
+
+底部「文字」可添加最多 8 段文字，每段最多 200 字，支持换行、拖动位置、
+字号、六种颜色、对齐和阴影。编辑页「完成」保存为一个可撤销步骤；「取消」
+保留原状。文字随作品存档、恢复及导出，导出不带相框时仍保留文字。
+
+内置 Noto Sans CJK SC Regular、Noto Serif CJK SC Regular 和霞鹜文楷 Regular，
+均为未修改的 SIL OFL 1.1 字体，可免费商用；完整许可与版权保存在 `Licenses/`
+并显示于应用「关于」。固定来源和 SHA-256 在
+`SpektraFilm/Resources/Fonts/SOURCES.json`。照片和文字均在本机处理。
+
+专用模拟器安装 Debug 后运行文字回归（90 秒超时、96 线程上限）：
+
+```bash
+python3 Scripts/test_photo_text.py --device SIMULATOR_UDID --output /path/to/text-test.log
 ```
 
 ## 应用里有什么

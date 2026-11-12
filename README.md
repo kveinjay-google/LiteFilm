@@ -4,7 +4,7 @@ LiteFilm 是基于 SpektraFilm / SpektraLab 的 iPhone 与 iPad 胶片照片编�
 
 [官网与帮助](https://www.superaitest.com/litefilm/) · [隐私政策](https://www.superaitest.com/litefilm/privacy.html)
 
-当前版本 0.1.0：36 款相框、本地画廊、裁剪与照片调整、文字、水印、JPEG / PNG / HEIC 导出。RAW/DNG 仅支持系统可解码格式，并非完整 RAW 显影流程。
+当前版本 0.1.0（build 10）：36 款相框、本地画廊、裁剪、精细调色、局部修饰、文字、水印、配方与批量导出。RAW/DNG 仅支持系统可解码格式，并非完整 RAW 显影流程。
 
 把 [spektrafilm](https://github.com/andreavolpato/spektrafilm) 的光谱胶片模拟做到 iPhone / iPad 上。渲染走 [SpektraLab](https://github.com/JamesQiu2005/SpektraLab) 的 C++ / Metal 引擎（`spk_engine.h` + `spektrafilm.metallib`），不是 LUT 套色，也不是把 Python 参考实现重写一遍。
 
@@ -34,7 +34,7 @@ xcodebuild -project SpektraFilm.xcodeproj -scheme SpektraFilm \
 
 ```bash
 xcrun simctl boot "iPhone 17"
-xcrun simctl install booted build/DerivedData/Build/Products/Debug-iphonesimulator/SpektraFilm.app
+xcrun simctl install booted build/DerivedData/Build/Products/Debug-iphonesimulator/LiteFilm.app
 xcrun simctl launch --console booted com.spektrafilm.ios --self-test
 ```
 
@@ -48,6 +48,26 @@ xcodebuild -project SpektraFilm.xcodeproj -scheme SpektraFilm \
   -configuration Debug -derivedDataPath build/DerivedData \
   DEVELOPMENT_TEAM=YOUR_TEAM_ID -allowProvisioningUpdates build
 ```
+
+## 精细编辑与批量处理（build 10）
+
+- **调整**：色温、色调、黑场、白场，与原有曝光、高光、阴影、对比度和饱和度共用预览与导出流程。「曲线与 HSL」提供五点主曲线和六个颜色通道，编辑时实时预览，取消不会写入。
+- **局部与修复**：渐变、径向、画笔可局部调整曝光与饱和度；取样修复先指定来源，再涂抹目标。修复是带羽化的取样覆盖，不是 AI 内容识别。最多 24 个局部图层；改变裁剪或几何校正会清空位置相关的修饰，并可撤销恢复。
+- **放大与分析**：预览下方放大镜进入 1–8 倍缩放、平移、原图对比、亮度直方图和高光提示。分析使用不含相框、文字、水印的照片预览；红色提示不会写入导出。1× 表示适合屏幕，并非原片像素级显示。
+- **我的配方**：编辑器「更多」里命名保存、复制或应用调整。最多 50 个本地配方；套用时保留目标照片的裁剪与局部修饰。
+- **编辑历史**：支持撤销、重做和跳回指定步骤，包括系统撤销手势。保留当前照片本次会话的最近 60 步；切换照片或重启后历史清空，已保存的配方和效果保持独立。
+- **批量处理**：「全部作品 → 选择 → 批量」，每批最多 50 张。可按各作品保存方案导出，或统一使用当前效果、命名配方、已复制调整。没有保存方案的原始导入照片使用打开批量页面时的当前效果，界面会明确提示。逐张串行处理，支持取消、逐张错误反馈和分享已完成文件。
+- **导出设置**：JPEG / PNG / HEIC、原尺寸（受设备内存上限约束）或长边 1280 / 2048 / 4096、每张体积上限、相框、水印；批量可单独关闭文字。体积上限可能降低质量与分辨率，无法满足时明确报错。
+
+所有处理在本机完成，无需账号或外部 AI 服务。原始照片不会被覆盖。已有相册/画廊切换、原生翻页、文字与免费商用字体保持可用。
+
+安装 Debug 包到专用模拟器后，可运行隔离的编辑测试（240 秒超时、96 线程上限）：
+
+```bash
+python3 Scripts/test_editing_suite.py --device SIMULATOR_UDID --output /path/to/editing-suite-test.log
+```
+
+测试覆盖颜色与局部处理的实际像素、旧配方解码、直方图方向、配方持久化、原生/自定义撤销、历史分支、照片切换，以及实际批量 JPEG / PNG 输出和体积限制。
 
 ## 相册与画廊（build 9）
 
@@ -79,7 +99,7 @@ python3 Scripts/test_photo_text.py --device SIMULATOR_UDID --output /path/to/tex
 - 选胶片和相纸。底部并排两列密实滚轮，上下拨动；分组仍是彩色负片、反转片、黑白，以及彩色/黑白相纸，组与组之间有一条细线。快速拨动会等停稳约 0.15 秒再渲染。换胶片时会带上该片建议的相纸。点预览或右上角进入全屏，全屏里同样可以拨滚轮，下滑或点向下箭头退出。目录来自真正的 spektrafilm 剖面，外加 SpektraLab 自己的黑白片和 CineStill 800T 别名。
 - 曝光补偿大约 ±2 EV。自动曝光仍开着（中心加权）。
 - 预览长边 2048。引擎的 `live` 档用同一长边，避免再留一份更大的工作集。
-- 导出 JPEG、PNG 或 HEIC，一次一张。导出前会丢掉预览用的 GPU 会话。导出长边按物理内存封顶：约 4 GB 以下 2048，约 6 GB 以下 3072，再大 4096，并且不会超过原图。这是为了躲开 jetsam，不是引擎的像素上限。
+- 导出 JPEG、PNG 或 HEIC，支持单张与批量。导出前会丢掉预览用的 GPU 会话。导出长边按物理内存封顶：约 4 GB 以下 2048，约 6 GB 以下 3072，再大 4096，并且不会超过原图。这是为了躲开 jetsam，不是引擎的像素上限。
 - 照片按 Display P3、带传输曲线送进引擎（`input_cctf_decoding`），结果也直接要 Display P3 编码，方便预览和导出。macOS 版默认停在 ProPhoto 工作空间里再做一次输出变换；这里没有那一层调色，所以没有照搬。
 
 ## 许可证

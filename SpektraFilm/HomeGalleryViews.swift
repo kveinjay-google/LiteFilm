@@ -209,6 +209,11 @@ enum GalleryHangMode: String, CaseIterable, Identifiable {
     var accessibilityLabel: String { "\(title)布局" }
 }
 
+private struct GalleryBatchSelection: Identifiable {
+    let id = UUID()
+    let items: [GalleryItem]
+}
+
 struct ImportGalleryView: View {
     @ObservedObject var model: LabModel
     @ObservedObject private var gallery: ImportGalleryStore
@@ -218,6 +223,7 @@ struct ImportGalleryView: View {
     @State private var editing = false
     @State private var selectedIDs: Set<String> = []
     @State private var pendingDelete: [GalleryItem] = []
+    @State private var batchSelection: GalleryBatchSelection?
     @State private var recentOnly = false
     @State private var focusIndex = 0
 
@@ -279,6 +285,9 @@ struct ImportGalleryView: View {
             .background(Ink.void.ignoresSafeArea())
         }
         .buttonStyle(.plain)
+        .sheet(item: $batchSelection) { selection in
+            BatchProcessingSheet(model: model, items: selection.items)
+        }
         .confirmationDialog(deleteTitle, isPresented: Binding(
             get: { !pendingDelete.isEmpty },
             set: { if !$0 { pendingDelete = [] } }
@@ -505,6 +514,12 @@ struct ImportGalleryView: View {
                 }
                 .font(.subheadline).frame(minHeight: 44)
                 Spacer(minLength: 0)
+                Button {
+                    batchSelection = GalleryBatchSelection(items: items.filter { selectedIDs.contains($0.id) })
+                } label: { Label("批量", systemImage: "square.and.arrow.up.on.square") }
+                .font(.subheadline).frame(minHeight: 44)
+                .disabled(selectedIDs.isEmpty || model.busy)
+                .accessibilityLabel("批量处理与导出所选照片，每批最多50张")
                 Button("删除（\(selectedIDs.count)）", role: .destructive) {
                     pendingDelete = gallery.items.filter { selectedIDs.contains($0.id) }
                 }

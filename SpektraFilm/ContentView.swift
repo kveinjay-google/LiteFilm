@@ -8,6 +8,9 @@ struct ContentView: View {
     @State private var showSignature = false
     @State private var showFrames = false
     @State private var showExport = false
+    @State private var showDetail = false
+    @State private var showRecipes = false
+    @State private var showHistory = false
     @State private var fullscreen = false
     @State private var comparing = false
     @Environment(\.undoManager) private var undoManager
@@ -39,6 +42,10 @@ struct ContentView: View {
         .preferredColorScheme(.dark)
         .tint(Ink.amber)
         .task {
+            if CommandLine.arguments.contains("--editing-suite-self-test") {
+                do { try await EditingSuiteSelfTest.run(); logLine("LITEFILM_EDITING_SUITE_OK"); exit(0) }
+                catch { logLine("LITEFILM_EDITING_SUITE_FAIL \(error)"); exit(1) }
+            }
             if CommandLine.arguments.contains("--text-self-test") {
                 do { try await PhotoTextSelfTest.run(); exit(0) }
                 catch { logLine("LITEFILM_TEXT_SELFTEST_FAIL \(error)"); exit(1) }
@@ -69,7 +76,20 @@ struct ContentView: View {
         .sheet(isPresented: $showSignature) { ObsidianSignatureSheet(model: model) }
         .sheet(isPresented: $showFrames) { FrameGallerySheet(model: model) }
         .sheet(isPresented: $showExport) { ObsidianExportSheet(model: model) }
+        .sheet(isPresented: $showRecipes) { RecipeBookSheet(model: model) }
+        .sheet(isPresented: $showHistory) { EditHistorySheet(model: model) }
+        .fullScreenCover(isPresented: $showDetail) {
+            if let image = model.inspectionPreview { PhotoDetailView(image: image, original: model.originalPreview) }
+        }
         .sheet(item: shareItem) { ActivityShare(url: $0.url) }
+    }
+
+    private func openDetail() {
+        model.finishPendingEdits()
+        Task {
+            await model.waitUntilSettled()
+            if !model.busy, model.errorText == nil { showDetail = true }
+        }
     }
 
     private var editor: some View {
@@ -126,8 +146,14 @@ struct ContentView: View {
             HStack(spacing: 4) {
                 Button { model.undo() } label: {
                     Image(systemName: "arrow.uturn.backward").frame(width: 44, height: 44)
-                }.disabled(!model.canUndo).accessibilityLabel("撤销")
-                Spacer()
+                }.disabled(!model.canUndo || model.busy).accessibilityLabel("撤销")
+                Button { model.redo() } label: {
+                    Image(systemName: "arrow.uturn.forward").frame(width: 40, height: 44)
+                }.disabled(!model.canRedo || model.busy).accessibilityLabel("重做")
+                Button { openDetail() } label: {
+                    Image(systemName: "plus.magnifyingglass").frame(width: 40, height: 44)
+                }.disabled(model.preview == nil || model.busy).accessibilityLabel("放大与直方图")
+                Spacer(minLength: 0)
                 Text(comparing ? "原图" : "按住对比")
                     .font(.caption).foregroundStyle(Ink.mute)
                 Image(systemName: "rectangle.lefthalf.inset.filled")
@@ -139,6 +165,10 @@ struct ContentView: View {
                     .accessibilityAddTraits(.isButton)
                     .accessibilityAction { comparing.toggle() }
                 Menu {
+                    Button("放大、直方图与过曝提示", systemImage: "plus.magnifyingglass") { openDetail() }
+                        .disabled(model.preview == nil || model.busy)
+                    Button("我的配方与复制调整", systemImage: "slider.horizontal.3") { model.finishPendingEdits(); showRecipes = true }
+                    Button("编辑历史", systemImage: "clock.arrow.circlepath") { model.finishPendingEdits(); showHistory = true }
                     Button("全屏预览", systemImage: "arrow.up.left.and.arrow.down.right") { fullscreen = true }
                     Button("保存方案", systemImage: "bookmark") { model.saveCurrentLookToGallery() }
                         .disabled(model.busy || model.preview == nil)

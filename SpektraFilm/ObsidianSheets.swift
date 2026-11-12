@@ -6,6 +6,7 @@ struct ObsidianExportSheet: View {
     @ObservedObject var model: LabModel
     @Environment(\.dismiss) private var dismiss
     @State private var format: ExportFormat = .jpeg
+    @AppStorage("litefilm.export.maxLongEdge") private var maxLongEdge = 0
     @State private var proof: UIImage?
     @State private var request: ExportRequest?
     @AppStorage("litefilm.export.limitEnabled") private var limitEnabled = false
@@ -20,6 +21,7 @@ struct ObsidianExportSheet: View {
         let frame: Bool
         let watermark: Bool
         let maxBytes: Int?
+        let maxLongEdge: Int?
     }
 
     var body: some View {
@@ -67,6 +69,12 @@ struct ObsidianExportSheet: View {
                             }
                         }
                     }
+                    Picker("最长边", selection: $maxLongEdge) {
+                        Text("原始尺寸（设备允许范围）").tag(0)
+                        Text("1280 像素").tag(1280)
+                        Text("2048 像素").tag(2048)
+                        Text("4096 像素").tag(4096)
+                    }.tint(Ink.amber)
                     sizeLimitControls
                     VStack(spacing: 0) {
                         Toggle(isOn: frameBinding) {
@@ -97,7 +105,7 @@ struct ObsidianExportSheet: View {
                     guard !invalidLimit else { return }
                     limitFocused = false
                     request = ExportRequest(format: format, frame: model.exportIncludeFrame,
-                                            watermark: model.exportIncludeWatermark, maxBytes: maxBytes)
+                                            watermark: model.exportIncludeWatermark, maxBytes: maxBytes, maxLongEdge: maxLongEdge == 0 ? nil : maxLongEdge)
                     dismiss()
                 } label: {
                     HStack(spacing: 10) {
@@ -144,7 +152,7 @@ struct ObsidianExportSheet: View {
             guard let pending = request else { return }
             request = nil
             model.export(pending.format, includeFrame: pending.frame,
-                         includeWatermark: pending.watermark, maxBytes: pending.maxBytes)
+                         includeWatermark: pending.watermark, maxBytes: pending.maxBytes, maxLongEdge: pending.maxLongEdge)
         }
     }
 

@@ -1,4 +1,5 @@
 import CoreGraphics
+import Combine
 import Foundation
 import PhotosUI
 import SwiftUI
@@ -46,10 +47,17 @@ final class LabModel: ObservableObject {
     @Published var previewSwap = PreviewSwap()
     @Published var thumbs: [String: UIImage] = [:]
     @Published var canUndo = false
+    @Published private(set) var canRedo = false
+    @Published private(set) var editHistory: [EditHistoryItem] = []
+    @Published private(set) var historyCursor = -1
+    @Published private(set) var retouchBasePreview: UIImage?
+    @Published private(set) var globalEditingPreview: UIImage?
+    @Published private(set) var inspectionPreview: UIImage?
+    let recipeBook: RecipeBook
     @Published private(set) var engineRenderCount = 0
     @Published private(set) var frameCacheHits = 0
     @Published var stage: LabStage = .home
-    @Published var gallery = ImportGalleryStore()
+    @Published var gallery: ImportGalleryStore
     /// Short non-blocking banner (e.g. RAW import note). Cleared automatically.
     @Published var noticeText: String?
 
@@ -75,12 +83,13 @@ final class LabModel: ObservableObject {
     private var sourcePixel = CGSize(width: 3, height: 2)
     private var engineOpen = false
     private var inFlight = false
+    private var exportQueued = false
+    private var batchRendering = false
     private var dirty = false
     private var debounce: Task<Void, Never>?
     private var pendingFilm: String?
     private var pendingPaper: String?
     private var undoBaseline: EditSnapshot?
-    private var undoStack: [EditSnapshot] = []
     private var started = false
     /// Nil means the built-in color chart is the working source.
     private var sourceImportID: String?
@@ -96,10 +105,28 @@ final class LabModel: ObservableObject {
     private var staged: FrameBuffer?
     var persistEnabled = true
     private var watermarkDragBaseline: EditSnapshot?
-    var undoManager: UndoManager?
+    private var rebuildingNativeHistory = false
+    private var nativeHistorySyncGeneration = 0
+    private var nativeHistoryGroupObserver: AnyCancellable?
+    var undoManager: UndoManager? {
+        didSet {
+            guard oldValue !== undoManager else { return }
+            nativeHistoryGroupObserver = nil
+            oldValue?.removeAllActions(withTarget: self)
+            nativeHistoryGroupObserver = undoManager.map { manager in
+                NotificationCenter.default.publisher(for: Notification.Name.NSUndoManagerDidCloseUndoGroup, object: manager)
+                    .sink { [weak self] _ in
+                        MainActor.assumeIsolated { self?.syncNativeHistory() }
+                    }
+            }
+            syncNativeHistory()
+        }
+    }
 
-    init(defaults: UserDefaults = .standard) {
+    init(defaults: UserDefaults = .standard, gallery: ImportGalleryStore? = nil) {
         self.defaults = defaults
+        self.gallery = gallery ?? ImportGalleryStore()
+        self.recipeBook = RecipeBook(defaults: defaults)
         favoriteFilms = Set(defaults.stringArray(forKey: "litefilm.favoriteFilms") ?? [])
         favoritePapers = Set(defaults.stringArray(forKey: "litefilm.favoritePapers") ?? [])
     }
@@ -463,6 +490,10 @@ final class LabModel: ObservableObject {
         guard value != adjustments.geometry else { return }
         let before = snapshot()
         adjustments.geometry = value
+        if !adjustments.retouch.isEmpty {
+            adjustments.retouch = RetouchEdits()
+            flashNotice("裁剪已更新，原有局部修饰已清除；可撤销恢复")
+        }
         pushUndo(before)
         persist()
         kickNow(keepingPending: true)
@@ -695,23 +726,74 @@ final class LabModel: ObservableObject {
         scheduleThumbs()
     }
 
+    func finishPendingEdits() { flushPending() }
+
     func undo() {
-        if let undoManager, undoManager.canUndo {
-            undoManager.undo()
-            syncCanUndo()
-            return
-        }
-        guard let previous = undoStack.popLast() else {
-            syncCanUndo()
-            return
-        }
-        restore(previous, recordInverse: true)
+        flushPending()
+        guard historyCursor > 0 else { return }
+        historyCursor -= 1
+        restore(editHistory[historyCursor].snapshot, recordInverse: false)
+    }
+
+    func redo() {
+        flushPending()
+        guard historyCursor + 1 < editHistory.count else { return }
+        historyCursor += 1
+        restore(editHistory[historyCursor].snapshot, recordInverse: false)
+    }
+
+    func restoreHistory(id: UUID) {
+        flushPending()
+        guard let index = editHistory.firstIndex(where: { $0.id == id }) else { return }
+        historyCursor = index
+        restore(editHistory[index].snapshot, recordInverse: false)
+    }
+
+    func applyAdjustments(_ value: PhotoAdjustments) {
+        flushPending()
+        let next = value.sanitized()
+        guard next != adjustments else { return }
+        let before = snapshot()
+        adjustments = next
+        pushUndo(before)
+        persist()
+        kickNow(keepingPending: true)
+    }
+
+    func applyRetouch(_ value: RetouchEdits) {
+        var next = adjustments
+        next.retouch = value.sanitized()
+        applyAdjustments(next)
+    }
+
+    func currentRecipe(portable: Bool = false) -> GalleryRecipe {
+        flushPending()
+        var edits = adjustments
+        if portable { edits.geometry = PhotoGeometry(); edits.retouch = RetouchEdits() }
+        return GalleryRecipe(filmID: filmID, paperID: paperID, exposureEV: exposureEV,
+                             frame: frame, watermark: watermark, adjustments: edits, textLayers: textLayers)
+    }
+
+    func applyPortableRecipe(_ recipe: GalleryRecipe) {
+        flushPending()
+        let before = snapshot()
+        let geometry = adjustments.geometry
+        let retouch = adjustments.retouch
+        applyRecipe(recipe)
+        adjustments.geometry = geometry
+        adjustments.retouch = retouch
+        pushUndo(before)
+        persist()
+        kickNow(keepingPending: true)
+        flashNotice("已应用配方，保留本张照片的裁剪与局部修饰")
     }
 
     /// `includeFrame` and `includeWatermark` are the choices at the moment of the tap.
     /// Film, paper, exposure, frame, and watermark are copied before the export task starts.
-    func export(_ format: ExportFormat, includeFrame: Bool, includeWatermark: Bool, maxBytes: Int? = nil) {
-        guard started, let data = sourceData, !inFlight else { return }
+    func export(_ format: ExportFormat, includeFrame: Bool, includeWatermark: Bool, maxBytes: Int? = nil, maxLongEdge: Int? = nil) {
+        guard started, !exportQueued, let data = sourceData else { return }
+        flushPending()
+        exportQueued = true
         shareURL = nil
         let params = currentParams()
         let edits = adjustments
@@ -726,17 +808,23 @@ final class LabModel: ObservableObject {
         let mark = markOn ? watermarkCatalog.preset(watermark.activeID) : nil
         let overlay = includeWatermark ? watermarkDraw() : nil
         let drawFrame = includeFrame && enabled
-        inFlight = true
-        busy = true
-        errorText = nil
-        status = drawFrame ? "正在按导出分辨率渲染" : "正在导出照片"
         let engine = self.engine
-        logLine("SPEKTRAFILM_EXPORT_BEGIN framed=\(drawFrame) watermark=\(mark != nil) format=\(format.rawValue) frame=\(frameID) mark=\(mark?.id ?? "none") ratio=\(ratio)")
         Task {
+            defer { exportQueued = false }
+            await waitUntilSettled(includingExport: false)
+            guard !busy, !inFlight else {
+                errorText = "编辑器仍在处理照片，请稍后重试。"
+                return
+            }
+            inFlight = true
+            busy = true
+            errorText = nil
+            status = drawFrame ? "正在按导出分辨率渲染" : "正在导出照片"
+            logLine("SPEKTRAFILM_EXPORT_BEGIN framed=\(drawFrame) watermark=\(mark != nil) format=\(format.rawValue) frame=\(frameID) mark=\(mark?.id ?? "none") ratio=\(ratio)")
             do {
                 let rendered = try await Task.detached {
                     let native = ImageCodec.nativeLongEdge(data)
-                    let edge = MemoryTier.exportLongEdge(nativeLongEdge: native)
+                    let edge = min(MemoryTier.exportLongEdge(nativeLongEdge: native), maxLongEdge.map { max(256, min(8192, $0)) } ?? Int.max)
                     let buffer = try ImageCodec.decode(data, maxLongEdge: edge)
                     logLine("SPEKTRAFILM_EXPORT_ENGINE edge=\(edge)")
                     let output = try engine.export(frame: buffer, params: params)
@@ -758,7 +846,8 @@ final class LabModel: ObservableObject {
                     } else {
                         request = nil
                     }
-                    let image = LabModel.compose(photo: adjusted, frame: request, watermark: overlay, text: text) ?? adjusted
+                    var image = LabModel.compose(photo: adjusted, frame: request, watermark: overlay, text: text) ?? adjusted
+                    if let maxLongEdge { image = FramePainter.downsample(image, longEdge: max(256, min(8192, maxLongEdge))) }
                     let file = try ImageCodec.writeExport(image, format: format, maxBytes: maxBytes)
                     return (file.url, file.width, file.height, file.bytes)
                 }.value
@@ -783,9 +872,23 @@ final class LabModel: ObservableObject {
         }
     }
 
-    func waitUntilSettled() async {
+    /// Suspend catalog previews for the duration of a separate batch engine run.
+    func beginBatchRendering() async -> Bool {
+        guard !batchRendering else { return false }
+        batchRendering = true
+        let thumbnails = catalogThumbTask
+        thumbnails?.cancel()
+        await thumbnails?.value
+        await waitUntilSettled()
+        guard !busy, !inFlight else { batchRendering = false; return false }
+        return true
+    }
+
+    func endBatchRendering() { batchRendering = false }
+
+    func waitUntilSettled(includingExport: Bool = true) async {
         for _ in 0..<600 {
-            if !busy, !inFlight, debounce == nil, pendingFilm == nil, pendingPaper == nil, paintsInFlight == 0 {
+            if !busy, !inFlight, (!includingExport || !exportQueued), debounce == nil, pendingFilm == nil, pendingPaper == nil, paintsInFlight == 0 {
                 return
             }
             try? await Task.sleep(nanoseconds: 50_000_000)
@@ -810,6 +913,9 @@ final class LabModel: ObservableObject {
         let backupAdjustments = processedAdjustments
         let backupEditingSource = editingSourcePreview
         let backupThumb = thumbPhoto
+        let backupGlobalBase = globalEditingPreview
+        let backupRetouchBase = retouchBasePreview
+        let backupInspection = inspectionPreview
         let backupPreview = preview
         let backupImport = sourceImportID
         sourceData = data
@@ -829,6 +935,9 @@ final class LabModel: ObservableObject {
             editingSourcePreview = backupEditingSource
             thumbPhoto = backupThumb
             preview = backupPreview
+            retouchBasePreview = backupRetouchBase
+            inspectionPreview = backupInspection
+            globalEditingPreview = backupGlobalBase
             sourceImportID = backupImport
             engineOpen = false
             errorText = message
@@ -837,8 +946,8 @@ final class LabModel: ObservableObject {
         }
         if backupImport != importID {
             // A previous photo's crop must never become this photo's Undo action.
-            undoManager?.removeAllActions(withTarget: self)
-            undoStack.removeAll()
+            editHistory.removeAll()
+            historyCursor = -1
             undoBaseline = nil
             pendingFilm = nil
             pendingPaper = nil
@@ -882,7 +991,7 @@ final class LabModel: ObservableObject {
     /// Cache is limited to one 160px image per catalog entry for the current source/context.
     func requestCatalogThumbnails(papers: Bool) async {
         catalogRequestedPapers = papers
-        guard started, let data = sourceData,
+        guard !batchRendering, started, let data = sourceData,
               let resources = Bundle.main.url(forResource: "engine", withExtension: nil) else { return }
         let prefix = papers ? "paper:" : "film:"
         let context = "\(prefix)\(sourceRevision)|\(filmID)|\(paperID)|\(exposureEV)"
@@ -1183,8 +1292,9 @@ final class LabModel: ObservableObject {
                     base = try engine.renderAgain(params: params)
                 }
                 let toned = try PhotoProcessor.tone(base.image, settings: edits)
-                let adjusted = try PhotoProcessor.geometry(toned, settings: edits.geometry)
-                return (Rendered(image: adjusted, width: adjusted.width, height: adjusted.height, elapsedMS: base.elapsedMS), toned)
+                let geometry = try PhotoProcessor.geometry(toned, settings: edits.geometry)
+                let adjusted = try PhotoRetouchProcessor.apply(geometry, edits: edits.retouch)
+                return (Rendered(image: adjusted, width: adjusted.width, height: adjusted.height, elapsedMS: base.elapsedMS), toned, geometry, base.image)
             }.value
             let rendered = result.0
             let stale = dirty || edits != adjustments || params != currentParams()
@@ -1201,9 +1311,12 @@ final class LabModel: ObservableObject {
                 return
             }
             processed = rendered.image
+            inspectionPreview = UIImage(cgImage: rendered.image)
             processedKey = params
             processedAdjustments = edits
             editingSourcePreview = UIImage(cgImage: result.1)
+            retouchBasePreview = UIImage(cgImage: result.2)
+            globalEditingPreview = UIImage(cgImage: result.3)
             engineOpen = true
             thumbPhoto = FramePainter.downsample(rendered.image, longEdge: 280)
             status = "预览 \(rendered.width)×\(rendered.height) · \(Self.seconds(rendered.elapsedMS))"
@@ -1476,18 +1589,18 @@ final class LabModel: ObservableObject {
     }
 
     private func pushUndo(_ previous: EditSnapshot) {
-        guard previous != snapshot() else { return }
-        if let undoManager {
-            undoManager.registerUndo(withTarget: self) { target in
-                target.restore(previous, recordInverse: true)
-            }
-            undoManager.setActionName("编辑")
-        } else {
-            undoStack.append(previous)
-            if undoStack.count > 40 {
-                undoStack.removeFirst(undoStack.count - 40)
-            }
+        let current = snapshot()
+        guard previous != current else { return }
+        if editHistory.isEmpty {
+            editHistory = [EditHistoryItem(title: "开始编辑", snapshot: previous)]
+            historyCursor = 0
         }
+        if historyCursor + 1 < editHistory.count {
+            editHistory.removeSubrange((historyCursor + 1)..<editHistory.count)
+        }
+        editHistory.append(EditHistoryItem(title: EditHistoryItem.describe(from: previous, to: current), snapshot: current))
+        if editHistory.count > 61 { editHistory.removeFirst(editHistory.count - 61) }
+        historyCursor = editHistory.count - 1
         syncCanUndo()
     }
 
@@ -1515,14 +1628,69 @@ final class LabModel: ObservableObject {
     }
 
     private func syncCanUndo() {
-        let value = undoManager?.canUndo ?? !undoStack.isEmpty
-        if canUndo != value { canUndo = value }
+        canUndo = historyCursor > 0
+        canRedo = historyCursor >= 0 && historyCursor + 1 < editHistory.count
+        syncNativeHistory()
+    }
+
+    /// The descriptive timeline is authoritative. Mirror its bounded transitions into
+    /// UIKit's manager so keyboard/gesture and toolbar actions share the same cursor.
+    /// Replaying the future below only positions UndoManager's stacks; it never
+    /// restores a photo, persists settings, or starts a render.
+    private func syncNativeHistory() {
+        guard let manager = undoManager, !rebuildingNativeHistory,
+              !manager.isUndoing, !manager.isRedoing, manager.isUndoRegistrationEnabled,
+              manager.groupingLevel == 0 else { return }
+        nativeHistorySyncGeneration += 1
+        manager.removeAllActions(withTarget: self)
+        guard editHistory.count > 1, historyCursor >= 0 else { return }
+        rebuildingNativeHistory = true
+        // With event grouping enabled, beginUndoGrouping() at level zero creates
+        // both an implicit event group and our explicit group. Closing only ours
+        // would leave every edit in the same outer group until the run loop ends.
+        // Isolate the mirror's groups, then restore UIKit's original policy.
+        let groupsByEvent = manager.groupsByEvent
+        manager.groupsByEvent = false
+        defer {
+            manager.groupsByEvent = groupsByEvent
+            rebuildingNativeHistory = false
+        }
+        for index in 1..<editHistory.count {
+            manager.beginUndoGrouping()
+            registerNativeHistoryStep(-1, title: editHistory[index].title, manager: manager)
+            manager.endUndoGrouping()
+        }
+        for _ in historyCursor..<(editHistory.count - 1) { manager.undo() }
+    }
+
+    private func registerNativeHistoryStep(_ direction: Int, title: String, manager: UndoManager) {
+        manager.registerUndo(withTarget: self) { target in
+            target.performNativeHistoryStep(direction, title: title)
+        }
+        manager.setActionName(title)
+    }
+
+    private func performNativeHistoryStep(_ direction: Int, title: String) {
+        guard let manager = undoManager else { return }
+        // Registration while undoing/redoing creates the opposite stack entry.
+        registerNativeHistoryStep(-direction, title: title, manager: manager)
+        guard !rebuildingNativeHistory else { return }
+        if direction < 0 { undo() } else { redo() }
+        // A native gesture can arrive during a pending slider debounce. undo()/redo()
+        // flush that edit first; reconcile any new branch after the native operation
+        // has finished, never by rebuilding recursively inside UndoManager.undo().
+        nativeHistorySyncGeneration += 1
+        let generation = nativeHistorySyncGeneration
+        Task { @MainActor [weak self] in
+            guard let self, self.nativeHistorySyncGeneration == generation else { return }
+            self.syncNativeHistory()
+        }
     }
 
     private func persist() {
         guard persistEnabled else { return }
         let payload = PersistedEdit(
-            schemaVersion: 7,
+            schemaVersion: 8,
             filmID: filmID,
             paperID: paperID,
             exposureEV: exposureEV,

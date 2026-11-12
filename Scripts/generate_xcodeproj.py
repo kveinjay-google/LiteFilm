@@ -368,7 +368,7 @@ def main() -> None:
         "CODE_SIGNING_REQUIRED": "YES",
         "CODE_SIGN_IDENTITY": '"Apple Development"',
         "CODE_SIGN_STYLE": "Automatic",
-        "CURRENT_PROJECT_VERSION": "12",
+        "CURRENT_PROJECT_VERSION": "13",
         "DEVELOPMENT_TEAM": "267KQ4A3N4",
         "ENABLE_PREVIEWS": "NO",
         "GENERATE_INFOPLIST_FILE": "YES",

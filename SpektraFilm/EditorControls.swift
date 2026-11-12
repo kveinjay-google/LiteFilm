@@ -39,7 +39,7 @@ struct EditorControls: View {
                     case .text: PhotoTextPanel(model: model)
                     }
                 }
-                .padding(.vertical, 12)
+                .padding(.vertical, tool == .adjust ? 8 : 12)
             }
             .frame(height: panelHeight)
             Rectangle().fill(Ink.hairline).frame(height: 0.5)

@@ -41,9 +41,12 @@ struct RetouchEditor: View {
     @State private var showOverlay = true
     @State private var renderer = RetouchPreviewRenderer()
 
-    init(image: UIImage, edits: RetouchEdits, onApply: @escaping (RetouchEdits) -> Void) {
+    init(image: UIImage, edits: RetouchEdits, initialTool: RetouchKind = .radial,
+         onApply: @escaping (RetouchEdits) -> Void) {
         self.image = image; self.onApply = onApply
         _draft = State(initialValue: edits.sanitized())
+        _tool = State(initialValue: initialTool)
+        _choosingSource = State(initialValue: initialTool == .repair)
     }
 
     private var selected: RetouchLayer? { draft.layers.first { $0.id == selectedID } }
@@ -141,7 +144,7 @@ struct RetouchEditor: View {
                 }.frame(maxHeight: 285)
             }
             .padding(.top, 8).background(Ink.void)
-            .navigationTitle("局部调整与修复").navigationBarTitleDisplayMode(.inline)
+            .navigationTitle(tool == .repair ? "取样修复" : "局部调整").navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) { Button("取消") { dismiss() } }
                 ToolbarItem(placement: .confirmationAction) {

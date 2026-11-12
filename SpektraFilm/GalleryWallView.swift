@@ -8,112 +8,126 @@ enum GalleryPresentation: String, CaseIterable, Identifiable {
     var systemImage: String { self == .album ? "square.grid.2x2" : "photo.artframe" }
 }
 
-/// Presentation only: selection, editing and deletion use the collection's existing actions.
+enum GalleryDirection: String, CaseIterable, Identifiable {
+    case vertical, horizontal
+    var id: Self { self }
+    var title: String { self == .vertical ? "上下浏览" : "左右浏览" }
+    var symbol: String { self == .vertical ? "arrow.up.and.down" : "arrow.left.and.right" }
+    var axis: Axis.Set { self == .vertical ? .vertical : .horizontal }
+}
+
+enum GalleryWallPalette {
+    static let wall = Color(red: 0.85, green: 0.84, blue: 0.81)
+    static let ink = Color(red: 0.19, green: 0.18, blue: 0.16)
+    static let paper = Color(red: 0.96, green: 0.95, blue: 0.92)
+}
+
+/// Use the system's projected resting point: a strong flick can cross many pages.
+/// Quantizing the final origin centers a full-viewport page, including both ends.
+enum GalleryPageSnap {
+    static func offset(projected: CGFloat, pageLength: CGFloat, count: Int) -> CGFloat {
+        guard projected.isFinite, pageLength.isFinite, pageLength > 0, count > 0 else { return 0 }
+        let page = min(CGFloat(count - 1), max(0, (projected / pageLength).rounded()))
+        return page * pageLength
+    }
+}
+
+private struct GalleryCenterSnap: ScrollTargetBehavior {
+    let direction: GalleryDirection
+    let count: Int
+    func updateTarget(_ target: inout ScrollTarget, context: TargetContext) {
+        if direction == .horizontal {
+            target.rect.origin.x = GalleryPageSnap.offset(projected: target.rect.minX,
+                pageLength: context.containerSize.width, count: count)
+            target.rect.origin.y = 0
+        } else {
+            target.rect.origin.y = GalleryPageSnap.offset(projected: target.rect.minY,
+                pageLength: context.containerSize.height, count: count)
+            target.rect.origin.x = 0
+        }
+        target.anchor = .topLeading
+    }
+}
+
+/// One complete artwork per viewport; collection mutations remain owned by the parent.
 struct GalleryWallView: View {
     let items: [GalleryItem]
     let gallery: ImportGalleryStore
-    let width: CGFloat
+    let direction: GalleryDirection
+    @Binding var focusedID: String?
     let editing: Bool
     let selectedIDs: Set<String>
     let busy: Bool
     let activate: (GalleryItem) -> Void
     let open: (GalleryItem) -> Void
     let delete: (GalleryItem) -> Void
+    var onBrowse: () -> Void = {}
 
-    private let wall = Color(red: 0.85, green: 0.84, blue: 0.81)
-    private let ink = Color(red: 0.19, green: 0.18, blue: 0.16)
-    private var columns: Int { width >= 700 ? 2 : 1 }
-    private var contentWidth: CGFloat { min(max(0, width - 48), 1100) }
-    private var artworkWidth: CGFloat { (contentWidth - CGFloat(columns - 1) * 48) / CGFloat(columns) }
+    // Ignore transient nil updates when the axis or viewport is being rebuilt.
+    private var position: Binding<String?> {
+        Binding(get: { focusedID }, set: { value in
+            if let value, items.contains(where: { $0.id == value }) { focusedID = value }
+        })
+    }
 
     var body: some View {
-        GeometryReader { geo in
-            if geo.size.height < 350 {
-                ScrollView(.horizontal) {
-                    LazyHStack(alignment: .top, spacing: 36) {
-                        ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
-                            artwork(item, index: index, size: CGSize(width: min(300, width * 0.44),
-                                                                   height: max(60, geo.size.height - 90)))
-                                .frame(width: min(300, width * 0.44))
-                        }
+        GeometryReader { geometry in
+            ScrollViewReader { proxy in
+                ScrollView(direction.axis, showsIndicators: false) {
+                    if direction == .horizontal {
+                        LazyHStack(spacing: 0) { pages(size: geometry.size) }.scrollTargetLayout()
+                    } else {
+                        LazyVStack(spacing: 0) { pages(size: geometry.size) }.scrollTargetLayout()
                     }
-                    .frame(minWidth: max(0, width - 48), alignment: items.count == 1 ? .center : .leading)
-                    .padding(.horizontal, 24)
-                    .padding(.vertical, 14)
                 }
-            } else {
-                exhibitionWall
+                .scrollTargetBehavior(GalleryCenterSnap(direction: direction, count: items.count))
+                .scrollPosition(id: position, anchor: .center)
+                .modifier(GalleryBrowseObserver(focusedID: focusedID, onBrowse: onBrowse))
+                .onAppear {
+                    if focusedID == nil || !items.contains(where: { $0.id == focusedID }) {
+                        focusedID = items.first?.id
+                    }
+                    if let focusedID { proxy.scrollTo(focusedID, anchor: .center) }
+                }
+                .onChange(of: geometry.size) { _, _ in
+                    if let focusedID { proxy.scrollTo(focusedID, anchor: .center) }
+                }
             }
+            .id(direction)
         }
-        .background(wall)
+        .background(GalleryWallPalette.wall)
         .accessibilityIdentifier("gallery.exhibition")
     }
 
-    private var exhibitionWall: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 28) {
-                HStack(alignment: .firstTextBaseline) {
-                    Text("私人展厅").font(.system(.title3, design: .serif).weight(.medium))
-                    Spacer()
-                    Text("\(items.count) 件作品").font(.caption.monospacedDigit())
-                }
-                .foregroundStyle(ink)
-                .padding(.bottom, 6)
-                .overlay(alignment: .bottom) { Rectangle().fill(ink.opacity(0.20)).frame(height: 0.5) }
-                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 48), count: columns), spacing: 44) {
-                    ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
-                        artwork(item, index: index, size: CGSize(width: artworkWidth, height: min(420, artworkWidth * 1.08)))
-                    }
-                }
-            }
-            .frame(width: contentWidth)
-            .padding(.top, 28)
-            .padding(.bottom, 44)
-            .frame(maxWidth: .infinity)
+    private func pages(size: CGSize) -> some View {
+        ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
+            artwork(item, index: index, size: size)
+                .frame(width: size.width, height: size.height)
+                .id(item.id)
         }
     }
 
     private func artwork(_ item: GalleryItem, index: Int, size: CGSize) -> some View {
         Button { activate(item) } label: {
-            VStack(alignment: .leading, spacing: 18) {
-                GalleryMountedPhoto(url: item.isVariant ? gallery.thumbURL(for: item) : gallery.originalURL(for: item),
-                                    fallback: item.isVariant ? nil : gallery.thumbURL(for: item),
-                                    alreadyFramed: item.isVariant,
-                                    width: size.width,
-                                    height: size.height)
-                    .overlay(alignment: .topTrailing) {
-                        if editing {
-                            Image(systemName: selectedIDs.contains(item.id) ? "checkmark.circle.fill" : "circle")
-                                .font(.title2)
-                                .foregroundStyle(ink)
-                                .padding(8)
-                                .background(wall, in: Circle())
-                        }
+            GalleryMountedPhoto(url: item.isVariant ? gallery.thumbURL(for: item) : gallery.originalURL(for: item),
+                fallback: item.isVariant ? nil : gallery.thumbURL(for: item), alreadyFramed: item.isVariant,
+                width: max(1, size.width - 40), height: max(1, size.height - 88))
+                .overlay(alignment: .topTrailing) {
+                    if editing {
+                        Image(systemName: selectedIDs.contains(item.id) ? "checkmark.circle.fill" : "circle")
+                            .font(.title2).foregroundStyle(GalleryWallPalette.ink)
+                            .padding(8).background(GalleryWallPalette.paper, in: Circle())
                     }
-                HStack(alignment: .top, spacing: 12) {
-                    Text(String(format: "%02d", index + 1))
-                        .font(.caption.monospacedDigit()).foregroundStyle(ink.opacity(0.65))
-                        .padding(.top, 3)
-                    Rectangle().fill(ink.opacity(0.3)).frame(width: 1, height: 34)
-                    VStack(alignment: .leading, spacing: 5) {
-                        Text(item.title).font(.subheadline.weight(.medium)).lineLimit(2)
-                        HStack(spacing: 8) {
-                            Text(item.createdAt, format: .dateTime.year().month().day())
-                            if item.isVariant { Text("保存方案") }
-                        }
-                        .font(.caption2).foregroundStyle(ink.opacity(0.7))
-                    }
-                    Spacer(minLength: 0)
                 }
-                .foregroundStyle(ink)
-                .padding(.horizontal, 6)
-            }
-            .contentShape(Rectangle())
+                .frame(width: size.width, height: size.height)
+                .contentShape(Rectangle())
         }
         .disabled(busy)
-        .accessibilityLabel("\(item.title)\(item.isVariant ? "，保存方案" : "")")
-        .accessibilityHint(editing ? "选择或取消选择" : "打开编辑")
+        .accessibilityLabel("第 \(index + 1) 幅，共 \(items.count) 幅，\(item.title)")
+        .accessibilityHint(editing ? "选择或取消选择" : "点按显示或隐藏操作，长按编辑作品")
+        .accessibilityIdentifier("gallery.artwork.\(index)")
         .accessibilityAddTraits(selectedIDs.contains(item.id) ? .isSelected : [])
+        .accessibilityAction(named: "打开编辑") { if !busy { open(item) } }
         .contextMenu {
             Button("打开编辑") { open(item) }.disabled(busy)
             Button("删除", role: .destructive) { delete(item) }.disabled(busy)
@@ -172,6 +186,23 @@ private struct GalleryMountedPhoto: View {
             guard !Task.isCancelled else { return }
             image = loaded
             finished = true
+        }
+    }
+}
+
+/// Observe native scrolling without introducing a competing pan recognizer.
+private struct GalleryBrowseObserver: ViewModifier {
+    let focusedID: String?
+    let onBrowse: () -> Void
+    func body(content: Content) -> some View {
+        if #available(iOS 18.0, *) {
+            content.onScrollPhaseChange { _, phase in
+                if phase == .interacting { onBrowse() }
+            }
+        } else {
+            content.onChange(of: focusedID) { old, new in
+                if old != nil && old != new { onBrowse() }
+            }
         }
     }
 }

@@ -37,6 +37,11 @@ private actor AdvancedColorPreviewRenderer {
     }
 }
 
+enum AdvancedColorSection {
+    case curve, hsl
+    var title: String { self == .curve ? "曲线" : "HSL 色彩" }
+}
+
 /// Edits remain local until Apply; Cancel never changes the active recipe.
 struct AdvancedColorEditor: View {
     @Environment(\.dismiss) private var dismiss
@@ -47,14 +52,17 @@ struct AdvancedColorEditor: View {
     @State private var renderedSettings: PhotoAdjustments?
     @State private var previewError: String?
     private let source: CGImage?
+    private let section: AdvancedColorSection
     private let onApply: (PhotoAdjustments) -> Void
     private static let bands = ["红", "黄", "绿", "青", "蓝", "洋红"]
     private static let colors: [Color] = [.red, .yellow, .green, .cyan, .blue, .purple]
     private static let anchors = ["黑场", "暗部", "中间调", "亮部", "白场"]
 
-    init(image: UIImage, settings: PhotoAdjustments, onApply: @escaping (PhotoAdjustments) -> Void) {
+    init(image: UIImage, settings: PhotoAdjustments, section: AdvancedColorSection = .curve,
+         onApply: @escaping (PhotoAdjustments) -> Void) {
         _draft = State(initialValue: settings.sanitized())
         self.onApply = onApply
+        self.section = section
         source = image.cgImage
     }
 
@@ -77,7 +85,7 @@ struct AdvancedColorEditor: View {
             }
             .background(Ink.void)
             .foregroundStyle(Ink.ivory)
-            .navigationTitle("曲线与色彩")
+            .navigationTitle(section.title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -137,38 +145,41 @@ struct AdvancedColorEditor: View {
 
     private var controls: some View {
         VStack(alignment: .leading, spacing: 24) {
-            VStack(alignment: .leading, spacing: 14) {
-                HStack {
-                    Text("主曲线").font(.headline)
-                    Spacer()
-                    Button("重置曲线") { draft.curve = ToneCurve() }
-                        .font(.subheadline).frame(minHeight: 44)
-                }
-                curveGraph
-                    .frame(height: 220)
-                Text("上下拖动控制点。相邻点保持明暗顺序。")
-                    .font(.caption).foregroundStyle(Ink.mute)
-                ForEach(0..<5, id: \.self) { index in
-                    valueSlider(Self.anchors[index], value: curveBinding(index), range: 0...1, signed: false)
+            if section == .curve {
+                VStack(alignment: .leading, spacing: 14) {
+                    HStack {
+                        Text("主曲线").font(.headline)
+                        Spacer()
+                        Button("重置曲线") { draft.curve = ToneCurve() }
+                            .font(.subheadline).frame(minHeight: 44)
+                    }
+                    curveGraph
+                        .frame(height: 220)
+                    Text("上下拖动控制点。相邻点保持明暗顺序。")
+                        .font(.caption).foregroundStyle(Ink.mute)
+                    ForEach(0..<5, id: \.self) { index in
+                        valueSlider(Self.anchors[index], value: curveBinding(index), range: 0...1, signed: false)
+                    }
                 }
             }
-            Divider().overlay(Ink.hairline)
-            VStack(alignment: .leading, spacing: 16) {
-                HStack {
-                    Text("HSL 色彩").font(.headline)
-                    Spacer()
-                    Button("重置色彩") { draft.hsl = HSLBand.defaults }
-                        .font(.subheadline).frame(minHeight: 44)
+            if section == .hsl {
+                VStack(alignment: .leading, spacing: 16) {
+                    HStack {
+                        Text("HSL 色彩").font(.headline)
+                        Spacer()
+                        Button("重置色彩") { draft.hsl = HSLBand.defaults }
+                            .font(.subheadline).frame(minHeight: 44)
+                    }
+                    ViewThatFits(in: .horizontal) {
+                        bandButtons
+                        ScrollView(.horizontal, showsIndicators: false) { bandButtons }
+                    }
+                    valueSlider("色相", value: bandBinding(\.hue), range: -1...1)
+                    valueSlider("饱和度", value: bandBinding(\.saturation), range: -1...1)
+                    valueSlider("明度", value: bandBinding(\.luminance), range: -1...1)
+                    Text("色相最多偏移 30°，相邻色段自然过渡。")
+                        .font(.caption).foregroundStyle(Ink.mute)
                 }
-                ViewThatFits(in: .horizontal) {
-                    bandButtons
-                    ScrollView(.horizontal, showsIndicators: false) { bandButtons }
-                }
-                valueSlider("色相", value: bandBinding(\.hue), range: -1...1)
-                valueSlider("饱和度", value: bandBinding(\.saturation), range: -1...1)
-                valueSlider("明度", value: bandBinding(\.luminance), range: -1...1)
-                Text("色相最多偏移 30°，相邻色段自然过渡。")
-                    .font(.caption).foregroundStyle(Ink.mute)
             }
         }
         .padding(20)

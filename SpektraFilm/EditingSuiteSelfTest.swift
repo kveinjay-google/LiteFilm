@@ -6,6 +6,7 @@ import UIKit
 @MainActor
 enum EditingSuiteSelfTest {
     static func run() async throws {
+        try checkGalleryPaging()
         try AdvancedColorSelfTest.run()
         try RetouchSelfTest.run()
         try PhotoAnalysisSelfTest.run()
@@ -28,6 +29,26 @@ enum EditingSuiteSelfTest {
 
     private static func require(_ condition: @autoclosure () throws -> Bool, _ message: String) throws {
         if try !condition() { throw EngineError.message("editing suite: " + message) }
+    }
+
+    private static func checkGalleryPaging() throws {
+        // Exercise both axes, multi-page momentum, reverse overscroll and final-page bounds.
+        for length: CGFloat in [393, 852, 1194] {
+            try require(GalleryPageSnap.offset(projected: length * 0.8, pageLength: length, count: 8) == length,
+                        "gallery ordinary swipe did not settle on next page")
+            try require(GalleryPageSnap.offset(projected: length * 4.3, pageLength: length, count: 8) == length * 4,
+                        "gallery momentum was restricted to one page")
+            try require(GalleryPageSnap.offset(projected: -length * 2, pageLength: length, count: 8) == 0,
+                        "gallery start overscroll")
+            try require(GalleryPageSnap.offset(projected: length * 99, pageLength: length, count: 8) == length * 7,
+                        "gallery final artwork not centered")
+            try require(GalleryPageSnap.offset(projected: length, pageLength: length, count: 1) == 0,
+                        "gallery single artwork")
+        }
+        try require(GalleryPageSnap.offset(projected: .nan, pageLength: 393, count: 8) == 0, "gallery invalid projection")
+        try require(GalleryPageSnap.offset(projected: 800, pageLength: 0, count: 8) == 0, "gallery zero viewport")
+        try require(GalleryPageSnap.offset(projected: 800, pageLength: 393, count: 0) == 0, "gallery empty collection")
+        logLine("LITEFILM_GALLERY_PAGING_SELFTEST_OK")
     }
 
     private static func expectError(_ label: String, _ operation: () throws -> Void) throws {

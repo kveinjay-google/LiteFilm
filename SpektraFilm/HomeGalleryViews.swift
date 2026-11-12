@@ -220,6 +220,10 @@ struct ImportGalleryView: View {
     @Binding var pickerItem: PhotosPickerItem?
     @AppStorage("litefilm.gallery.obsidianLayout") private var hangModeRaw = GalleryHangMode.grid.rawValue
     @AppStorage("litefilm.gallery.presentation") private var presentationRaw = GalleryPresentation.album.rawValue
+    @AppStorage("litefilm.gallery.direction") private var directionRaw = GalleryDirection.vertical.rawValue
+    @AppStorage("litefilm.gallery.showArtworkInfo") private var showArtworkInfo = false
+    @State private var focusedGalleryID: String?
+    @State private var galleryChromeVisible = true
     @State private var editing = false
     @State private var selectedIDs: Set<String> = []
     @State private var pendingDelete: [GalleryItem] = []
@@ -236,54 +240,65 @@ struct ImportGalleryView: View {
     private var presentation: GalleryPresentation { GalleryPresentation(rawValue: presentationRaw) ?? .album }
     private var hangMode: GalleryHangMode { GalleryHangMode(rawValue: hangModeRaw) ?? .grid }
     private var items: [GalleryItem] { recentOnly ? gallery.recent(limit: 12) : gallery.items }
+    private var direction: GalleryDirection { GalleryDirection(rawValue: directionRaw) ?? .vertical }
+    private var immersive: Bool { presentation == .gallery && !editing && !items.isEmpty }
+    private var focusedArtwork: GalleryItem? { items.first { $0.id == focusedGalleryID } ?? items.first }
 
     var body: some View {
-        GeometryReader { geo in
-            let landscape = geo.size.width > geo.size.height
-            VStack(spacing: 0) {
-                CollectionHeader(title: "全部作品") {
-                    Button { model.openHome() } label: {
-                        Image(systemName: "chevron.left").collectionIcon()
+        Group {
+            if immersive {
+                immersiveGallery
+            } else {
+                GeometryReader { geo in
+                    let landscape = geo.size.width > geo.size.height
+                    VStack(spacing: 0) {
+                        CollectionHeader(title: "全部作品") {
+                            Button { model.openHome() } label: {
+                                Image(systemName: "chevron.left").collectionIcon()
+                            }
+                            .disabled(model.busy)
+                            .accessibilityLabel("返回首页")
+                        } trailing: {
+                            Button(editing ? "完成" : "选择") {
+                                editing.toggle()
+                                selectedIDs.removeAll()
+                            }
+                            .font(.subheadline.weight(.medium))
+                            .foregroundStyle(editing ? Ink.amber : Ink.ivory)
+                            .frame(minWidth: 44, minHeight: 44)
+                            .disabled(gallery.items.isEmpty || model.busy)
+                        }
+                        if landscape {
+                            HStack(spacing: 0) {
+                                presentationPicker
+                                collectionToolbar
+                            }
+                        } else {
+                            presentationPicker
+                            collectionToolbar
+                        }
+                        CollectionStatus(model: model)
+                        if items.isEmpty {
+                            emptyGallery
+                        } else if presentation == .gallery {
+                            GalleryWallView(items: items, gallery: gallery, direction: direction, focusedID: $focusedGalleryID,
+                                            editing: editing, selectedIDs: selectedIDs, busy: model.busy,
+                                            activate: activate, open: { item in
+                                                Task { await model.openImport(id: item.id) }
+                                            }, delete: { pendingDelete = [$0] })
+                        } else if hangMode == .single {
+                            singleContent(height: max(120, geo.size.height - 250))
+                        } else {
+                            gridContent(landscape: landscape)
+                        }
+                        bottomBar
                     }
-                    .disabled(model.busy)
-                    .accessibilityLabel("返回首页")
-                } trailing: {
-                    Button(editing ? "完成" : "选择") {
-                        editing.toggle()
-                        selectedIDs.removeAll()
-                    }
-                    .font(.subheadline.weight(.medium))
-                    .foregroundStyle(editing ? Ink.amber : Ink.ivory)
-                    .frame(minWidth: 44, minHeight: 44)
-                    .disabled(gallery.items.isEmpty || model.busy)
+                    .background(Ink.void.ignoresSafeArea())
                 }
-                if landscape {
-                    HStack(spacing: 0) {
-                        presentationPicker
-                        collectionToolbar
-                    }
-                } else {
-                    presentationPicker
-                    collectionToolbar
-                }
-                CollectionStatus(model: model)
-                if items.isEmpty {
-                    emptyGallery
-                } else if presentation == .gallery {
-                    GalleryWallView(items: items, gallery: gallery, width: geo.size.width,
-                                    editing: editing, selectedIDs: selectedIDs, busy: model.busy,
-                                    activate: activate, open: { item in
-                                        Task { await model.openImport(id: item.id) }
-                                    }, delete: { pendingDelete = [$0] })
-                } else if hangMode == .single {
-                    singleContent(height: max(120, geo.size.height - 250))
-                } else {
-                    gridContent(landscape: landscape)
-                }
-                bottomBar
             }
-            .background(Ink.void.ignoresSafeArea())
         }
+        .statusBarHidden(immersive)
+        .persistentSystemOverlays(immersive ? .hidden : .automatic)
         .buttonStyle(.plain)
         .sheet(item: $batchSelection) { selection in
             BatchProcessingSheet(model: model, items: selection.items)
@@ -309,11 +324,99 @@ struct ImportGalleryView: View {
             selectedIDs.formIntersection(Set(values.map(\.id)))
             focusIndex = min(focusIndex, max(0, items.count - 1))
             if values.isEmpty { editing = false }
+            if let focusedGalleryID, !items.contains(where: { $0.id == focusedGalleryID }) {
+                self.focusedGalleryID = items.first?.id
+            }
         }
         .onChange(of: recentOnly) { _, _ in
             focusIndex = 0
             selectedIDs.removeAll()
+            focusedGalleryID = items.first?.id
         }
+    }
+
+    private var immersiveGallery: some View {
+        ZStack {
+            GalleryWallView(items: items, gallery: gallery, direction: direction, focusedID: $focusedGalleryID,
+                editing: false, selectedIDs: [], busy: model.busy,
+                activate: { _ in
+                    withAnimation(.easeOut(duration: 0.18)) { galleryChromeVisible.toggle() }
+                }, open: { item in Task { await model.openImport(id: item.id) } },
+                delete: { pendingDelete = [$0] }, onBrowse: {
+                    if galleryChromeVisible { withAnimation(.easeOut(duration: 0.18)) { galleryChromeVisible = false } }
+                })
+                .ignoresSafeArea()
+            if galleryChromeVisible {
+                VStack(spacing: 0) {
+                    HStack(spacing: 12) {
+                        Button { presentationRaw = GalleryPresentation.album.rawValue } label: {
+                            galleryChromeIcon("chevron.left")
+                        }.accessibilityLabel("返回相册")
+                        Spacer()
+                        Button {
+                            directionRaw = (direction == .vertical ? GalleryDirection.horizontal : .vertical).rawValue
+                        } label: { galleryChromeIcon(direction.symbol) }
+                            .accessibilityLabel(direction == .vertical ? "切换为左右浏览" : "切换为上下浏览")
+                            .accessibilityValue(direction.title)
+                            .accessibilityIdentifier("gallery.direction")
+                        Menu {
+                            Picker("浏览方向", selection: $directionRaw) {
+                                ForEach(GalleryDirection.allCases) { mode in
+                                    Label(mode.title, systemImage: mode.symbol).tag(mode.rawValue)
+                                }
+                            }
+                            Toggle("显示作品信息", isOn: $showArtworkInfo)
+                            Button(recentOnly ? "查看全部作品" : "只看最近作品", systemImage: "line.3.horizontal.decrease") {
+                                recentOnly.toggle()
+                            }
+                            Button("选择作品", systemImage: "checkmark.circle") { editing = true; selectedIDs.removeAll() }
+                            PhotosPicker(selection: $pickerItem, matching: PhotoImport.pickerFilter,
+                                         preferredItemEncoding: PhotoImport.preferredEncoding) {
+                                Label("导入照片", systemImage: "plus")
+                            }
+                        } label: { galleryChromeIcon("ellipsis") }
+                            .accessibilityLabel("画廊选项")
+                    }
+                    .disabled(model.busy)
+                    Spacer()
+                    if let item = focusedArtwork {
+                        HStack(alignment: .bottom, spacing: 12) {
+                            VStack(alignment: .leading, spacing: 5) {
+                                if showArtworkInfo {
+                                    Text(item.title).font(.subheadline.weight(.medium)).lineLimit(2)
+                                    Text(item.createdAt, format: .dateTime.year().month().day()).font(.caption)
+                                }
+                                Text("\((items.firstIndex(where: { $0.id == item.id }) ?? 0) + 1) / \(items.count)")
+                                    .font(.caption.monospacedDigit())
+                            }
+                            .padding(.horizontal, 12).padding(.vertical, 9)
+                            .background(GalleryWallPalette.paper.opacity(0.92), in: RoundedRectangle(cornerRadius: 12))
+                            Spacer()
+                            Button { Task { await model.openImport(id: item.id) } } label: {
+                                galleryChromeIcon("slider.horizontal.3")
+                            }.disabled(model.busy).accessibilityLabel("编辑当前作品")
+                        }
+                    }
+                }
+                .foregroundStyle(GalleryWallPalette.ink)
+                .padding(.horizontal, 20).padding(.vertical, 12)
+                .transition(.opacity)
+            }
+            if model.busy || model.errorText != nil {
+                VStack { CollectionStatus(model: model).background(Ink.void); Spacer() }
+            }
+        }
+        .background(GalleryWallPalette.wall.ignoresSafeArea())
+        .accessibilityAction(named: "显示画廊操作") { galleryChromeVisible = true }
+        .accessibilityAction(named: "返回相册") { presentationRaw = GalleryPresentation.album.rawValue }
+    }
+
+    private func galleryChromeIcon(_ symbol: String) -> some View {
+        Image(systemName: symbol).font(.system(size: 18, weight: .medium))
+            .foregroundStyle(GalleryWallPalette.ink)
+            .frame(width: 44, height: 44)
+            .background(GalleryWallPalette.paper.opacity(0.92), in: Circle())
+            .shadow(color: .black.opacity(0.06), radius: 6, y: 2)
     }
 
     private var deleteTitle: String {
